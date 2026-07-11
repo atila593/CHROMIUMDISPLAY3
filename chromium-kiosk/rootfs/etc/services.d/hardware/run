@@ -2,35 +2,18 @@
 exec 2>&1
 
 echo "================================================================="
-echo "  [CHECK-LIST] INITIALISATION DES COMPOSANTS SYSTÈME (SEATD)     "
+echo "  [CHECK-LIST] INITIALISATION DES COMPOSANTS SYSTÈME (UDEV)      "
 echo "================================================================="
 
-# 1. Démarrage de seatd
-seatd -g video &
-PID_SEATD=$!
-
-TIMEOUT=5
-while [ ! -S /run/seatd.sock ] && [ $TIMEOUT -gt 0 ]; do
-    sleep 0.5
-    let TIMEOUT--
-done
-
-if [ -S /run/seatd.sock ]; then
-    echo "  [ OK ] Étape 1 : Gestionnaire d'accès seatd opérationnel."
-else
-    echo "  [ ÉCHEC ] Étape 1 : Impossible de lier la socket seatd."
-    exit 1
-fi
-
-# 2. Amorce de la détection de l'écran tactile
+# 1. Amorce de la détection de la dalle tactile et des périphériques d'entrée
 echo -n "  [CHECK] Initialisation de UDEV pour le pavé tactile... "
 if udevadm trigger --action=add 2>/dev/null; then
     echo -e "\e[32m[ OK ]\e[0m"
 else
-    echo -e "\e[33m[ ATTENTION ]\e[0m"
+    echo -e "\e[33m[ ATTENTION ]\e[0m (Vérifier les privilèges)"
 fi
 
-# 3. Validation de l'accès direct aux pilotes graphiques (GPU Intel)
+# 2. Validation de l'accès direct aux nœuds graphiques du GPU
 echo -n "  [CHECK] Détection de l'accélérateur graphique (DRM)... "
 if [ -d /dev/dri ] && [ "$(ls -A /dev/dri 2>/dev/null)" ]; then
     echo -e "\e[32m[ OK ]\e[0m"
@@ -40,11 +23,12 @@ else
 fi
 
 echo "================================================================="
-echo "  [CHECK-LIST TERMINÉE] TOUS LES SYSTÈMES MATÉRIELS SONT PRÊTS   "
+echo "  [CHECK-LIST TERMINÉE] PRÉPARATION DU MATÉRIEL RÉUSSIE          "
 echo "================================================================="
 
-mkdir -p /run/xdg-kiosk
-chmod 0700 /run/xdg-kiosk
+# Création sécurisée des répertoires pour l'affichage
+mkdir -p /run/user/0
+chmod 0700 /run/user/0
 
-trap "kill $PID_SEATD; exit 0" SIGINT SIGTERM
-wait $PID_SEATD
+# Ce script a terminé son travail de vérification initiale
+exit 0
