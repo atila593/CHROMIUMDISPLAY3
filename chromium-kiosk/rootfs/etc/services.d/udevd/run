@@ -1,4 +1,12 @@
 #!/bin/bash
 exec 2>&1
+
+# Nettoyage d'un socket résiduel laissé par une instance udevd précédente
+# (même piège que pour seatd : sans ça, le nouveau udevd refuse de démarrer)
+if [ -S /run/udev/control ]; then
+    echo "⚠️  Socket udevd résiduel détecté, nettoyage..."
+    rm -f /run/udev/control
+fi
+
 echo "🔌 Démarrage du daemon udevd..."
 exec /sbin/udevd --debug
