@@ -1,0 +1,18 @@
+name: "Chromium Display 3 Kiosk"
+version: "1.0.0"
+slug: "chromium_display_3_kiosk"
+description: "Affichage Kiosque ultra-performant et léger basé sur Chromium Ozone DRM/KMS pour dalles tactiles et caméras."
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+full_access: true
+host_ipc: true
+udev: true
+host_network: true
+options:
+  url: "http://supervisor/dashboard-kiosk"
+schema:
+  url: str
