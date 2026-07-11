@@ -5,26 +5,18 @@ echo "================================================================="
 echo "  [CHECK-LIST] INITIALISATION DES COMPOSANTS SYSTÈME (UDEV)      "
 echo "================================================================="
 
-# 0. Attente que le daemon udevd soit opérationnel (socket de contrôle prêt)
-echo -n "  [CHECK] Attente du daemon udevd... "
-UDEVD_READY=0
-for i in $(seq 1 50); do
-    if [ -S /run/udev/control ]; then
-        UDEVD_READY=1
-        break
-    fi
-    sleep 0.1
-done
-if [ "$UDEVD_READY" -eq 1 ]; then
-    echo -e "\e[32m[ OK ]\e[0m"
-else
-    echo -e "\e[31m[ ÉCHEC ]\e[0m (socket /run/udev/control jamais apparu après 5s)"
-fi
-
 # 1. Amorce de la détection de la dalle tactile et des périphériques d'entrée
 echo -n "  [CHECK] Initialisation de UDEV pour le pavé tactile... "
-if udevadm trigger --action=add 2>/dev/null && udevadm settle --timeout=5 2>/dev/null; then
+if udevadm trigger --action=add 2>/dev/null; then
     echo -e "\e[32m[ OK ]\e[0m"
+    
+    # CRUCIAL POUR LE TACTILE : On donne les permissions d'accès aux périphériques de saisie
+    if [ -d /dev/input ]; then
+        chmod 666 /dev/input/* 2>/dev/null
+        echo "         -> Droits d'accès accordés aux dalles tactiles (/dev/input)"
+    else
+        echo "         -> ⚠️ Attention : Aucun dossier /dev/input trouvé"
+    fi
 else
     echo -e "\e[33m[ ATTENTION ]\e[0m (Vérifier les privilèges)"
 fi
@@ -38,26 +30,6 @@ if [ -d /dev/dri ] && [ "$(ls -A /dev/dri 2>/dev/null)" ]; then
 else
     echo -e "\e[31m[ ÉCHEC ]\e[0m (Accès direct GPU manquant)"
 fi
-
-# --- Diagnostic tactile : on liste les périphériques d'entrée détectés ---
-echo "-----------------------------------------------------------------"
-echo "  [DIAGNOSTIC] Périphériques d'entrée détectés (/dev/input) :"
-ls -l /dev/input/ 2>/dev/null | sed 's/^/         -> /'
-
-echo "  [DIAGNOSTIC] Devices tagués écran tactile dans la base udev :"
-TOUCH_COUNT=$(cat /run/udev/data/* 2>/dev/null | grep -c ID_INPUT_TOUCHSCREEN)
-echo "         -> ID_INPUT_TOUCHSCREEN trouvé $TOUCH_COUNT fois"
-
-if [ "$TOUCH_COUNT" -eq 0 ]; then
-    echo "         -> ⚠️  Aucun device tactile reconnu par udev !"
-    echo "         -> Contenu brut de la base udev pour /dev/input/event* :"
-    for dev in /dev/input/event*; do
-        [ -e "$dev" ] || continue
-        MAJMIN=$(stat -c '%t:%T' "$dev" 2>/dev/null)
-        echo "         -> $dev (major:minor $MAJMIN)"
-    done
-fi
-echo "-----------------------------------------------------------------"
 
 echo "================================================================="
 echo "  [CHECK-LIST TERMINÉE] PRÉPARATION DU MATÉRIEL RÉUSSIE          "
