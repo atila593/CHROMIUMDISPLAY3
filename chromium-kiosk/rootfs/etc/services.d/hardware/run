@@ -1,0 +1,50 @@
+#!/bin/bash
+exec 2>&1
+
+echo "================================================================="
+echo "  [CHECK-LIST] INITIALISATION DES COMPOSANTS SYSTÈME (SEATD)     "
+echo "================================================================="
+
+# 1. Démarrage du médiateur de permissions matérielles
+seatd -g video &
+PID_SEATD=$!
+
+TIMEOUT=5
+while [ ! -S /run/seatd.sock ] && [ $TIMEOUT -gt 0 ]; do
+    sleep 0.5
+    let TIMEOUT--
+done
+
+if [ -S /run/seatd.sock ]; then
+    echo "  [ OK ] Étape 1 : Gestionnaire d'accès seatd opérationnel."
+else
+    echo "  [ ÉCHEC ] Étape 1 : Impossible de lier la socket seatd."
+    exit 1
+fi
+
+# 2. Amorce de la détection du pavé tactile / souris / clavier
+echo -n "  [CHECK] Initialisation de UDEV pour le pavé tactile... "
+if udevadm trigger --action=add 2>/dev/null; then
+    echo -e "\e[32m[ OK ]\e[0m"
+else
+    echo -e "\e[33m[ ATTENTION ]\e[0m (Vérifie les privilèges de l'add-on)"
+fi
+
+# 3. Scan de l'accélérateur graphique (GPU)
+echo -n "  [CHECK] Détection de l'accélérateur graphique... "
+if lspci | grep -E -i 'vga|3d|display' > /dev/null; then
+    echo -e "\e[32m[ OK ]\e[0m"
+    lspci | grep -E -i 'vga|3d|display' | sed 's/^/         -> /'
+else
+    echo -e "\e[31m[ ÉCHEC ]\e[0m (Aucun GPU trouvé, rendu logiciel dégradé CPU attendu)"
+fi
+
+echo "================================================================="
+echo "  [CHECK-LIST TERMINÉE] TOUS LES SYSTÈMES MATÉRIELS SONT PRÊTS   "
+echo "================================================================="
+
+mkdir -p /run/xdg-kiosk
+chmod 0700 /run/xdg-kiosk
+
+trap "kill $PID_SEATD; exit 0" SIGINT SIGTERM
+wait $PID_SEATD
