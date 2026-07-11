@@ -7,6 +7,12 @@ echo "🚀 Alignement des paramètres graphiques et de navigation..."
 export XDG_RUNTIME_DIR=/run/user/0
 export CHROME_LOG_FILE=/dev/stdout
 
+# FORCER CAGE À UTILISER LE BACKEND INTÉGRÉ SANS CHERCHER LOGIND/SYSTEMD
+export WLR_LIBSEAT_BACKEND=builtin
+
+# Forcer Mesa à utiliser le pilote matériel natif
+export EGL_PLATFORM=wayland
+
 # Récupération de l'URL cible
 if [ -f /data/options.json ]; then
     URL=$(jq --raw-output '.url' /data/options.json 2>/dev/null)
