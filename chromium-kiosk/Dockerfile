@@ -1,14 +1,13 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.20
 FROM ${BUILD_FROM}
 
-# Installation de Chromium, des pilotes graphiques et de la gestion des périphériques
+# Installation de Chromium, des pilotes graphiques et du compositeur kiosque léger Cage
 RUN apk add --no-cache \
     chromium \
+    cage \
     mesa-dri-gallium \
     mesa-va-gallium \
-    seatd \
     udev \
-    pciutils \
     jq \
     dos2unix
 
