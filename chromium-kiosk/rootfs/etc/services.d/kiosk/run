@@ -7,71 +7,61 @@ echo "🚀 Alignement des paramètres graphiques et de navigation..."
 export XDG_RUNTIME_DIR=/run/user/0
 export CHROME_LOG_FILE=/dev/stdout
 export EGL_PLATFORM=wayland
-export WAYLAND_DEBUG=1
 
-# CRUCIAL POUR LE TACTILE : Indiquer à wlroots (Cage) d'utiliser seatd pour les entrées tactiles
-export WLR_LIBSEAT_BACKEND=seatd
+# Forcer libseat à utiliser seatd de manière transparente
 export LIBSEAT_BACKEND=seatd
+export WLR_LIBSEAT_BACKEND=seatd
 
-# --- Gestion du daemon seatd ---
-
+# --- Droits et Nettoyage Matériel ---
 if [ -S /run/seatd.sock ]; then
     echo "⚠️  Socket seatd résiduel détecté, nettoyage..."
     rm -f /run/seatd.sock
 fi
 
 echo "🔐 Démarrage du gestionnaire de sièges (seatd)..."
+# On force l'exécution en arrière-plan
 seatd -g root &
 SEATD_PID=$!
 
 trap 'echo "🧹 Arrêt de seatd (PID $SEATD_PID)"; kill $SEATD_PID 2>/dev/null' EXIT
 
+# Attente du socket
 SEATD_READY=0
 for i in $(seq 1 50); do
     if [ -S /run/seatd.sock ]; then
         SEATD_READY=1
         break
     fi
-    if ! kill -0 "$SEATD_PID" 2>/dev/null; then
-        echo "❌ seatd s'est arrêté prématurément."
-        break
-    fi
     sleep 0.1
 done
 
-if [ "$SEATD_READY" -eq 1 ]; then
-    echo "✅ seatd prêt (socket /run/seatd.sock disponible)."
-else
-    echo "❌ ERREUR : le socket seatd n'est jamais apparu après 5s."
-fi
-
 chmod 0666 /run/seatd.sock 2>/dev/null
 
-# --- Droits d'accès Matériels (GPU + Pavé Tactile) ---
-
-echo "🎮 Application des permissions sur les périphériques d'entrée et graphiques..."
+# Force l'accès aux entrées tactiles pour Cage
 if [ -d /dev/input ]; then
     chmod 666 /dev/input/* 2>/dev/null
-    echo "  -> [OK] Droits accordés sur les périphériques tactiles (/dev/input)"
 fi
 if [ -d /dev/dri ]; then
     chmod 666 /dev/dri/* 2>/dev/null
-    echo "  -> [OK] Droits accordés sur les pilotes graphiques (/dev/dri)"
 fi
+
+# Configuration d'un stockage persistant pour isoler les cookies de session HA
+mkdir -p /data/chromium-profile
+chmod 777 /data/chromium-profile
 
 # Récupération de l'URL cible
 if [ -f /data/options.json ]; then
     URL=$(jq --raw-output '.url' /data/options.json 2>/dev/null)
 fi
 if [ -z "$URL" ] || [ "$URL" == "null" ]; then
-    URL="http://supervisor/dashboard-kiosk"
+    URL="http://192.168.1.XX:8123/lovelace/0?auth_callback=1"
 fi
 
-echo "Lancement de CHROMIUMDISPLAY3 via le compositeur kiosque Cage..."
+echo "Lancement de CHROMIUMDISPLAY3 via Cage..."
 echo "Destination : $URL"
 
-# Exécution de cage avec Chromium
-cage -d -- chromium-browser \
+# Lancement de Cage + Chromium avec profil persistant et gestion tactile evdev forcee
+exec cage -d -- chromium-browser \
     --kiosk \
     --no-sandbox \
     --no-first-run \
@@ -85,4 +75,5 @@ cage -d -- chromium-browser \
     --enable-zero-copy \
     --touch-events=enabled \
     --enable-hardware-overlays \
-    "$URL" 2>&1 | head -n 4000
+    --user-data-dir=/data/chromium-profile \
+    "$URL"
