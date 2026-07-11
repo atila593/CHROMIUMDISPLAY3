@@ -8,18 +8,48 @@ export XDG_RUNTIME_DIR=/run/user/0
 export CHROME_LOG_FILE=/dev/stdout
 export EGL_PLATFORM=wayland
 
-# 2. Forcer wlroots à utiliser le backend libseat intégré en mode autonome
-# Cela évite que seatd ne tente de verrouiller un VT (Terminal Virtuel) inexistant
-export WLR_LIBSEAT_BACKEND=builtin
-export LIBSEAT_BACKEND=builtin
+# 2. Configuration stricte pour libseat avec le démon dédié
+export LIBSEAT_BACKEND=seatd
+export WLR_LIBSEAT_BACKEND=seatd
+export SEATD_SOCK=/run/seatd.sock
 
-# 3. Application des permissions absolues sur les périphériques
+# Nettoyage d'une socket résiduelle éventuelle
+if [ -S /run/seatd.sock ]; then
+    echo "⚠️ Socket seatd résiduel détecté, nettoyage..."
+    rm -f /run/seatd.sock
+fi
+
+echo "🔐 Démarrage de seatd en mode non-VT pour libérer le tactile..."
+# IMPORTANT : Le drapeau "-n" empêche seatd de s'approprier les terminaux virtuels de l'hôte,
+# ce qui évite les erreurs de permission et permet à Cage d'intercepter /dev/input/*
+seatd -g root -n &
+SEATD_PID=$!
+
+trap 'echo "🧹 Arrêt de seatd (PID $SEATD_PID)"; kill $SEATD_PID 2>/dev/null' EXIT
+
+# Attente de la création de la socket seatd
+SEATD_READY=0
+for i in $(seq 1 50); do
+    if [ -S /run/seatd.sock ]; then
+        SEATD_READY=1
+        break
+    fi
+    sleep 0.1
+done
+
+if [ "$SEATD_READY" -eq 1 ]; then
+    echo "✅ Le gestionnaire de sièges seatd est prêt."
+else
+    echo "❌ Échec de l'initialisation de seatd."
+fi
+
+chmod 0666 /run/seatd.sock 2>/dev/null
+
+# 3. Application des permissions absolues sur les entrées tactiles et le GPU
 echo "🎮 Libération des accès matériels (GPU + Dalle Tactile)..."
 if [ -d /dev/input ]; then
     chmod -R 777 /dev/input/ 2>/dev/null
     echo "  -> [OK] Permissions appliquées sur /dev/input"
-else
-    echo "  -> ⚠️ /dev/input introuvable"
 fi
 
 if [ -d /dev/dri ]; then
@@ -27,7 +57,7 @@ if [ -d /dev/dri ]; then
     echo "  -> [OK] Permissions appliquées sur /dev/dri"
 fi
 
-# 4. Configuration du profil persistant de Chromium (déjà validé)
+# 4. Configuration du profil persistant de Chromium (pour conserver la session)
 mkdir -p /data/chromium-profile
 chmod -R 777 /data/chromium-profile
 
@@ -39,10 +69,10 @@ if [ -z "$URL" ] || [ "$URL" == "null" ]; then
     URL="http://192.168.1.XX:8123/lovelace/0?auth_callback=1"
 fi
 
-echo "Lancement de CHROMIUMDISPLAY3 via Cage (Mode autonome)..."
+echo "Lancement de CHROMIUMDISPLAY3 via Cage..."
 echo "Destination : $URL"
 
-# 6. Exécution de Cage + Chromium avec injection forcée des événements tactiles evdev
+# 6. Exécution de Cage + Chromium
 exec cage -d -- chromium-browser \
     --kiosk \
     --no-sandbox \
