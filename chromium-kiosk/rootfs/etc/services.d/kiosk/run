@@ -3,53 +3,35 @@ exec 2>&1
 
 echo "🚀 Alignement des paramètres graphiques et de navigation..."
 
-# Environnement requis pour Wayland / Cage
+# 1. Environnement de base requis pour Wayland / Cage
 export XDG_RUNTIME_DIR=/run/user/0
 export CHROME_LOG_FILE=/dev/stdout
 export EGL_PLATFORM=wayland
 
-# Forcer libseat à utiliser seatd de manière transparente
-export LIBSEAT_BACKEND=seatd
-export WLR_LIBSEAT_BACKEND=seatd
+# 2. Forcer wlroots à utiliser le backend libseat intégré en mode autonome
+# Cela évite que seatd ne tente de verrouiller un VT (Terminal Virtuel) inexistant
+export WLR_LIBSEAT_BACKEND=builtin
+export LIBSEAT_BACKEND=builtin
 
-# --- Droits et Nettoyage Matériel ---
-if [ -S /run/seatd.sock ]; then
-    echo "⚠️  Socket seatd résiduel détecté, nettoyage..."
-    rm -f /run/seatd.sock
-fi
-
-echo "🔐 Démarrage du gestionnaire de sièges (seatd)..."
-# On force l'exécution en arrière-plan
-seatd -g root &
-SEATD_PID=$!
-
-trap 'echo "🧹 Arrêt de seatd (PID $SEATD_PID)"; kill $SEATD_PID 2>/dev/null' EXIT
-
-# Attente du socket
-SEATD_READY=0
-for i in $(seq 1 50); do
-    if [ -S /run/seatd.sock ]; then
-        SEATD_READY=1
-        break
-    fi
-    sleep 0.1
-done
-
-chmod 0666 /run/seatd.sock 2>/dev/null
-
-# Force l'accès aux entrées tactiles pour Cage
+# 3. Application des permissions absolues sur les périphériques
+echo "🎮 Libération des accès matériels (GPU + Dalle Tactile)..."
 if [ -d /dev/input ]; then
-    chmod 666 /dev/input/* 2>/dev/null
+    chmod -R 777 /dev/input/ 2>/dev/null
+    echo "  -> [OK] Permissions appliquées sur /dev/input"
+else
+    echo "  -> ⚠️ /dev/input introuvable"
 fi
+
 if [ -d /dev/dri ]; then
-    chmod 666 /dev/dri/* 2>/dev/null
+    chmod -R 777 /dev/dri/ 2>/dev/null
+    echo "  -> [OK] Permissions appliquées sur /dev/dri"
 fi
 
-# Configuration d'un stockage persistant pour isoler les cookies de session HA
+# 4. Configuration du profil persistant de Chromium (déjà validé)
 mkdir -p /data/chromium-profile
-chmod 777 /data/chromium-profile
+chmod -R 777 /data/chromium-profile
 
-# Récupération de l'URL cible
+# 5. Récupération de l'URL cible
 if [ -f /data/options.json ]; then
     URL=$(jq --raw-output '.url' /data/options.json 2>/dev/null)
 fi
@@ -57,10 +39,10 @@ if [ -z "$URL" ] || [ "$URL" == "null" ]; then
     URL="http://192.168.1.XX:8123/lovelace/0?auth_callback=1"
 fi
 
-echo "Lancement de CHROMIUMDISPLAY3 via Cage..."
+echo "Lancement de CHROMIUMDISPLAY3 via Cage (Mode autonome)..."
 echo "Destination : $URL"
 
-# Lancement de Cage + Chromium avec profil persistant et gestion tactile evdev forcee
+# 6. Exécution de Cage + Chromium avec injection forcée des événements tactiles evdev
 exec cage -d -- chromium-browser \
     --kiosk \
     --no-sandbox \
