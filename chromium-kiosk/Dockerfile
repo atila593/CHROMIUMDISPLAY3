@@ -19,6 +19,10 @@ COPY rootfs /
 RUN if [ -d /etc/services.d ]; then \
         dos2unix /etc/services.d/*/run 2>/dev/null || true; \
         chmod -R 755 /etc/services.d/; \
+    fi && \
+    if [ -d /etc/cont-init.d ]; then \
+        dos2unix /etc/cont-init.d/* 2>/dev/null || true; \
+        chmod -R 755 /etc/cont-init.d/; \
     fi
 
 ENTRYPOINT ["/init"]
