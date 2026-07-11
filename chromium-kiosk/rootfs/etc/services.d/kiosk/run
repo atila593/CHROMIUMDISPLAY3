@@ -1,14 +1,10 @@
 #!/bin/bash
 exec 2>&1
 
-echo "Attente de la validation de la check-list matérielle..."
-while [ ! -S /run/seatd.sock ]; do
-    sleep 0.2
-done
+echo "🚀 Alignement des paramètres graphiques et de navigation..."
 
-echo "🚀 Systèmes matériels vérifiés. Alignement des paramètres de navigation..."
-
-export XDG_RUNTIME_DIR=/run/xdg-kiosk
+# Environnement requis pour Wayland / Cage
+export XDG_RUNTIME_DIR=/run/user/0
 export CHROME_LOG_FILE=/dev/stdout
 
 # Récupération de l'URL cible
@@ -19,11 +15,12 @@ if [ -z "$URL" ] || [ "$URL" == "null" ]; then
     URL="http://supervisor/dashboard-kiosk"
 fi
 
-echo "Lancement de CHROMIUMDISPLAY3 (Mode Kiosque Natif DRM/KMS)..."
+echo "Lancement de CHROMIUMDISPLAY3 via le compositeur kiosque Cage..."
 echo "Destination : $URL"
 
-# Flags de performance : Optimisation Tactile, Accélération GPU et Décodage Vidéo
-exec chromium-browser \
+# On exécute cage qui prend le contrôle de l'affichage direct DRM, 
+# et lui demande de lancer chromium en mode ozone wayland avec support tactile.
+exec cage -d -- chromium-browser \
     --kiosk \
     --no-sandbox \
     --no-first-run \
@@ -32,8 +29,7 @@ exec chromium-browser \
     --no-errdialogs \
     --disable-infobars \
     --autoplay-policy=no-user-gesture-required \
-    --ozone-platform=drm \
-    --use-gl=egl \
+    --ozone-platform=wayland \
     --enable-gpu-rasterization \
     --enable-zero-copy \
     --touch-events=enabled \
