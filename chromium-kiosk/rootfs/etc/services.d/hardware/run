@@ -5,7 +5,7 @@ echo "================================================================="
 echo "  [CHECK-LIST] INITIALISATION DES COMPOSANTS SYSTÈME (SEATD)     "
 echo "================================================================="
 
-# 1. Démarrage du médiateur de permissions matérielles
+# 1. Démarrage de seatd
 seatd -g video &
 PID_SEATD=$!
 
@@ -22,21 +22,21 @@ else
     exit 1
 fi
 
-# 2. Amorce de la détection du pavé tactile / souris / clavier
+# 2. Amorce de la détection de l'écran tactile
 echo -n "  [CHECK] Initialisation de UDEV pour le pavé tactile... "
 if udevadm trigger --action=add 2>/dev/null; then
     echo -e "\e[32m[ OK ]\e[0m"
 else
-    echo -e "\e[33m[ ATTENTION ]\e[0m (Vérifie les privilèges de l'add-on)"
+    echo -e "\e[33m[ ATTENTION ]\e[0m"
 fi
 
-# 3. Scan de l'accélérateur graphique (GPU)
-echo -n "  [CHECK] Détection de l'accélérateur graphique... "
-if lspci | grep -E -i 'vga|3d|display' > /dev/null; then
+# 3. Validation de l'accès direct aux pilotes graphiques (GPU Intel)
+echo -n "  [CHECK] Détection de l'accélérateur graphique (DRM)... "
+if [ -d /dev/dri ] && [ "$(ls -A /dev/dri 2>/dev/null)" ]; then
     echo -e "\e[32m[ OK ]\e[0m"
-    lspci | grep -E -i 'vga|3d|display' | sed 's/^/         -> /'
+    ls -l /dev/dri | sed 's/^/         -> /'
 else
-    echo -e "\e[31m[ ÉCHEC ]\e[0m (Aucun GPU trouvé, rendu logiciel dégradé CPU attendu)"
+    echo -e "\e[31m[ ÉCHEC ]\e[0m (Accès direct GPU manquant)"
 fi
 
 echo "================================================================="
