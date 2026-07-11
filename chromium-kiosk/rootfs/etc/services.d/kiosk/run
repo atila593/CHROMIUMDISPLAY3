@@ -7,6 +7,7 @@ echo "🚀 Alignement des paramètres graphiques et de navigation..."
 export XDG_RUNTIME_DIR=/run/user/0
 export CHROME_LOG_FILE=/dev/stdout
 export EGL_PLATFORM=wayland
+export WAYLAND_DEBUG=1
 
 # Forcer libseat à utiliser seatd (pas de logind/systemd dans HAOS)
 export LIBSEAT_BACKEND=seatd
