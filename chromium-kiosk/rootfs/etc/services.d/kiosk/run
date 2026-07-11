@@ -9,36 +9,31 @@ export CHROME_LOG_FILE=/dev/stdout
 export EGL_PLATFORM=wayland
 export WAYLAND_DEBUG=1
 
-# Forcer libseat à utiliser seatd (pas de logind/systemd dans HAOS)
+# CRUCIAL POUR LE TACTILE : Indiquer à wlroots (Cage) d'utiliser seatd pour les entrées tactiles
+export WLR_LIBSEAT_BACKEND=seatd
 export LIBSEAT_BACKEND=seatd
 
 # --- Gestion du daemon seatd ---
 
-# Nettoyage d'un socket résiduel laissé par un crash / redémarrage précédent.
-# Sans ça, seatd peut refuser de démarrer en pensant qu'une instance tourne déjà.
 if [ -S /run/seatd.sock ]; then
     echo "⚠️  Socket seatd résiduel détecté, nettoyage..."
     rm -f /run/seatd.sock
 fi
 
 echo "🔐 Démarrage du gestionnaire de sièges (seatd)..."
-# PAS de -v ici : le flag verbose fait quitter seatd immédiatement (déjà vu sur l'addon Firefox)
 seatd -g root &
 SEATD_PID=$!
 
-# On s'assure que seatd est bien tué si ce script se termine (évite les zombies au redémarrage du service)
 trap 'echo "🧹 Arrêt de seatd (PID $SEATD_PID)"; kill $SEATD_PID 2>/dev/null' EXIT
 
-# Attente active de la création du socket (max 5s), au lieu d'un sleep fixe fragile
 SEATD_READY=0
 for i in $(seq 1 50); do
     if [ -S /run/seatd.sock ]; then
         SEATD_READY=1
         break
     fi
-    # Si seatd est mort entre-temps, inutile d'attendre les 5s
     if ! kill -0 "$SEATD_PID" 2>/dev/null; then
-        echo "❌ seatd s'est arrêté prématurément (code $?)."
+        echo "❌ seatd s'est arrêté prématurément."
         break
     fi
     sleep 0.1
@@ -48,14 +43,21 @@ if [ "$SEATD_READY" -eq 1 ]; then
     echo "✅ seatd prêt (socket /run/seatd.sock disponible)."
 else
     echo "❌ ERREUR : le socket seatd n'est jamais apparu après 5s."
-    echo "   -> Vérifie que le paquet 'seatd' est bien installé dans le Dockerfile."
-    echo "   -> Vérifie qu'aucune autre instance (elogind, seatd) n'est déjà active."
-    echo "   -> Cage va probablement échouer à créer son backend wlroots juste après ce message."
 fi
 
-# Permissions larges sur le socket : au cas où un futur changement ferait tourner
-# chromium/cage sous un utilisateur non-root, on évite un blocage de permission silencieux.
 chmod 0666 /run/seatd.sock 2>/dev/null
+
+# --- Droits d'accès Matériels (GPU + Pavé Tactile) ---
+
+echo "🎮 Application des permissions sur les périphériques d'entrée et graphiques..."
+if [ -d /dev/input ]; then
+    chmod 666 /dev/input/* 2>/dev/null
+    echo "  -> [OK] Droits accordés sur les périphériques tactiles (/dev/input)"
+fi
+if [ -d /dev/dri ]; then
+    chmod 666 /dev/dri/* 2>/dev/null
+    echo "  -> [OK] Droits accordés sur les pilotes graphiques (/dev/dri)"
+fi
 
 # Récupération de l'URL cible
 if [ -f /data/options.json ]; then
@@ -68,8 +70,7 @@ fi
 echo "Lancement de CHROMIUMDISPLAY3 via le compositeur kiosque Cage..."
 echo "Destination : $URL"
 
-# On exécute cage qui prend le contrôle de l'affichage direct DRM,
-# et lui demande de lancer chromium en mode ozone wayland avec support tactile.
+# Exécution de cage avec Chromium
 cage -d -- chromium-browser \
     --kiosk \
     --no-sandbox \
