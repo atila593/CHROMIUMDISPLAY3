@@ -1,0 +1,41 @@
+#!/bin/bash
+exec 2>&1
+
+echo "Attente de la validation de la check-list matérielle..."
+while [ ! -S /run/seatd.sock ]; do
+    sleep 0.2
+done
+
+echo "🚀 Systèmes matériels vérifiés. Alignement des paramètres de navigation..."
+
+export XDG_RUNTIME_DIR=/run/xdg-kiosk
+export CHROME_LOG_FILE=/dev/stdout
+
+# Récupération de l'URL cible
+if [ -f /data/options.json ]; then
+    URL=$(jq --raw-output '.url' /data/options.json 2>/dev/null)
+fi
+if [ -z "$URL" ] || [ "$URL" == "null" ]; then
+    URL="http://supervisor/dashboard-kiosk"
+fi
+
+echo "Lancement de CHROMIUMDISPLAY3 (Mode Kiosque Natif DRM/KMS)..."
+echo "Destination : $URL"
+
+# Flags de performance : Optimisation Tactile, Accélération GPU et Décodage Vidéo
+exec chromium-browser \
+    --kiosk \
+    --no-sandbox \
+    --no-first-run \
+    --enable-logging=stderr \
+    --log-level=0 \
+    --no-errdialogs \
+    --disable-infobars \
+    --autoplay-policy=no-user-gesture-required \
+    --ozone-platform=drm \
+    --use-gl=egl \
+    --enable-gpu-rasterization \
+    --enable-zero-copy \
+    --touch-events=enabled \
+    --enable-hardware-overlays \
+    "$URL"
