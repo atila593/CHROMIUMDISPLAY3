@@ -17,6 +17,8 @@ fi
 echo -n "  [CHECK] Détection de l'accélérateur graphique (DRM)... "
 if [ -d /dev/dri ] && [ "$(ls -A /dev/dri 2>/dev/null)" ]; then
     echo -e "\e[32m[ OK ]\e[0m"
+    # Ajustement des permissions des périphériques DRM pour Cage
+    chmod 666 /dev/dri/* 2>/dev/null
     ls -l /dev/dri | sed 's/^/         -> /'
 else
     echo -e "\e[31m[ ÉCHEC ]\e[0m (Accès direct GPU manquant)"
@@ -26,9 +28,8 @@ echo "================================================================="
 echo "  [CHECK-LIST TERMINÉE] PRÉPARATION DU MATÉRIEL RÉUSSIE          "
 echo "================================================================="
 
-# Création sécurisée des répertoires pour l'affichage
+# Création et droits pour les répertoires d'affichage Wayland
 mkdir -p /run/user/0
 chmod 0700 /run/user/0
 
-# Ce script a terminé son travail de vérification initiale
 exit 0
