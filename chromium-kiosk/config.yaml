@@ -1,5 +1,5 @@
 name: "Chromium Display 3 Kiosk"
-version: "1.0.4"
+version: "1.0.5"
 slug: "chromium_display_3_kiosk"
 description: "Affichage Kiosque ultra-performant et léger basé sur Chromium Ozone DRM/KMS pour dalles tactiles et caméras."
 arch:
@@ -13,6 +13,6 @@ host_ipc: true
 udev: true
 host_network: true
 options:
-  url: "http://supervisor/dashboard-kiosk"
+  url: "http://homeassistant:8123/lovelace/0"
 schema:
   url: str
