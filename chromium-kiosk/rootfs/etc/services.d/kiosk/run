@@ -70,7 +70,7 @@ echo "Destination : $URL"
 
 # On exécute cage qui prend le contrôle de l'affichage direct DRM,
 # et lui demande de lancer chromium en mode ozone wayland avec support tactile.
-exec cage -d -- chromium-browser \
+cage -d -- chromium-browser \
     --kiosk \
     --no-sandbox \
     --no-first-run \
@@ -84,4 +84,4 @@ exec cage -d -- chromium-browser \
     --enable-zero-copy \
     --touch-events=enabled \
     --enable-hardware-overlays \
-    "$URL"
+    "$URL" 2>&1 | head -n 4000
