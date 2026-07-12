@@ -11,7 +11,15 @@ init: false
 full_access: true
 host_ipc: true
 udev: true
+privileged:
+  - SYS_ADMIN
+  - NET_ADMIN
 host_network: true
+devices:
+  - /dev/dri:/dev/dri
+  - /dev/fb0:/dev/fb0
+  - /dev/input:/dev/input
+  - /dev/tty0:/dev/tty0
 options:
   url: "http://homeassistant:8123/lovelace/0"
 schema:
