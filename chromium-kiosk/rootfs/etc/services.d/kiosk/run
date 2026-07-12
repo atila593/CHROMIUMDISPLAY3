@@ -75,6 +75,7 @@ echo "Destination : $URL"
 socat TCP-LISTEN:9223,fork,reuseaddr TCP:127.0.0.1:9222 &
 
 # 6. Exécution de Cage + Chromium
+# 6. Exécution de Cage + Chromium
 exec cage -d -- chromium-browser \
     --kiosk \
     --no-sandbox \
@@ -85,10 +86,10 @@ exec cage -d -- chromium-browser \
     --disable-infobars \
     --autoplay-policy=no-user-gesture-required \
     --ozone-platform=wayland \
-    --enable-gpu-rasterization \
-    --enable-zero-copy \
+    --disable-gpu \
+    --disable-software-rasterizer \
+    --disable-features=Vulkan,UseOzonePlatform \
     --touch-events=enabled \
-    --enable-hardware-overlays \
     --user-data-dir=/data/chromium-profile \
     --remote-debugging-port=9222 \
     --remote-allow-origins=* \
