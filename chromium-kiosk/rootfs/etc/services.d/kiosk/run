@@ -72,6 +72,8 @@ fi
 echo "Lancement de CHROMIUMDISPLAY3 via Cage..."
 echo "Destination : $URL"
 
+export WAYLAND_DEBUG=1
+
 # 6. Exécution de Cage + Chromium
 exec cage -d -- chromium-browser \
     --kiosk \
