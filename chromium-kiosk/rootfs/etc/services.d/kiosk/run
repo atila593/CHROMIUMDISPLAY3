@@ -92,4 +92,5 @@ exec cage -d -- chromium-browser \
     --user-data-dir=/data/chromium-profile \
     --remote-debugging-port=9222 \
     --remote-allow-origins=* \
+    --vmodule \
     "$URL"
