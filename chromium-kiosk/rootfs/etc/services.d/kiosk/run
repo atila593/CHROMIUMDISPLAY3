@@ -42,7 +42,7 @@ echo "Destination : $URL"
 
 socat TCP-LISTEN:9223,fork,reuseaddr TCP:127.0.0.1:9222 &
 
-# 6. Exécution de Cage + Chromium
+# 6. Exécution de Cage + Chromium avec les bons flags de stabilité
 exec cage -d -- chromium-browser \
     --kiosk \
     --no-sandbox \
