@@ -90,5 +90,5 @@ exec cage -d -- chromium-browser \
     --touch-events=enabled \
     --enable-hardware-overlays \
     --user-data-dir=/data/chromium-profile \
-    --remote-debugging-port=9222
+    --remote-debugging-port=9222 \
     "$URL"
