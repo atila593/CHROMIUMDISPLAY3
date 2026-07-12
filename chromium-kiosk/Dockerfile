@@ -11,6 +11,7 @@ RUN apk add --no-cache \
     mesa-va-gallium \
     udev \
     jq \
+    socat \
     dos2unix
 
 COPY rootfs /
