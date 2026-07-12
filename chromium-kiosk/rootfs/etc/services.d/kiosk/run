@@ -3,7 +3,7 @@ exec 2>&1
 
 echo "🚀 Alignement des paramètres graphiques et de navigation..."
 
-# 1. Environnement de base requis pour Wayland / Cage
+# 1. Environnement de base requis pour Wayland / Cage + Force le mode direct (builtin)
 export XDG_RUNTIME_DIR=/run/user/0
 export CHROME_LOG_FILE=/dev/stdout
 export EGL_PLATFORM=wayland
@@ -11,42 +11,7 @@ export SEATD_LOG_LEVEL=debug
 export LIBSEAT_BACKEND=builtin
 export WLR_LIBSEAT_BACKEND=builtin
 
-# 2. Configuration stricte pour libseat avec le démon dédié
-export LIBSEAT_BACKEND=seatd
-export WLR_LIBSEAT_BACKEND=seatd
-export SEATD_SOCK=/run/seatd.sock
-
-# Nettoyage d'une socket résiduelle éventuelle
-if [ -S /run/seatd.sock ]; then
-    echo "⚠️ Socket seatd résiduel détecté, nettoyage..."
-    rm -f /run/seatd.sock
-fi
-
-echo "🔐 Démarrage de seatd en mode non-VT pour libérer le tactile..."
-# IMPORTANT : Le drapeau "-n" empêche seatd de s'approprier les terminaux virtuels de l'hôte,
-# ce qui évite les erreurs de permission et permet à Cage d'intercepter /dev/input/*
-seatd -n -g root &
-SEATD_PID=$!
-
-trap 'echo "🧹 Arrêt de seatd (PID $SEATD_PID)"; kill $SEATD_PID 2>/dev/null' EXIT
-
-# Attente de la création de la socket seatd
-SEATD_READY=0
-for i in $(seq 1 50); do
-    if [ -S /run/seatd.sock ]; then
-        SEATD_READY=1
-        break
-    fi
-    sleep 0.1
-done
-
-if [ "$SEATD_READY" -eq 1 ]; then
-    echo "✅ Le gestionnaire de sièges seatd est prêt."
-else
-    echo "❌ Échec de l'initialisation de seatd."
-fi
-
-chmod 0666 /run/seatd.sock 2>/dev/null
+echo "🔐 Mode libseat direct (builtin) activé pour libérer le tactile..."
 
 # 3. Application des permissions absolues sur les entrées tactiles et le GPU
 echo "🎮 Libération des accès matériels (GPU + Dalle Tactile)..."
@@ -77,7 +42,6 @@ echo "Destination : $URL"
 
 socat TCP-LISTEN:9223,fork,reuseaddr TCP:127.0.0.1:9222 &
 
-# 6. Exécution de Cage + Chromium
 # 6. Exécution de Cage + Chromium
 exec cage -d -- chromium-browser \
     --kiosk \
