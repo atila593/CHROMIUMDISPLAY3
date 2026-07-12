@@ -22,7 +22,7 @@ fi
 echo "🔐 Démarrage de seatd en mode non-VT pour libérer le tactile..."
 # IMPORTANT : Le drapeau "-n" empêche seatd de s'approprier les terminaux virtuels de l'hôte,
 # ce qui évite les erreurs de permission et permet à Cage d'intercepter /dev/input/*
-seatd -g root &
+seatd -n -g root &
 SEATD_PID=$!
 
 trap 'echo "🧹 Arrêt de seatd (PID $SEATD_PID)"; kill $SEATD_PID 2>/dev/null' EXIT
