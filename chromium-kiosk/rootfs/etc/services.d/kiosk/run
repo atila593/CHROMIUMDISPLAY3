@@ -72,7 +72,7 @@ fi
 echo "Lancement de CHROMIUMDISPLAY3 via Cage..."
 echo "Destination : $URL"
 
-export WAYLAND_DEBUG=1
+
 
 # 6. Exécution de Cage + Chromium
 exec cage -d -- chromium-browser \
@@ -90,4 +90,5 @@ exec cage -d -- chromium-browser \
     --touch-events=enabled \
     --enable-hardware-overlays \
     --user-data-dir=/data/chromium-profile \
+    --remote-debugging-port=9222
     "$URL"
