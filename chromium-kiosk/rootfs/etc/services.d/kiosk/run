@@ -7,6 +7,9 @@ echo "🚀 Alignement des paramètres graphiques et de navigation..."
 export XDG_RUNTIME_DIR=/run/user/0
 export CHROME_LOG_FILE=/dev/stdout
 export EGL_PLATFORM=wayland
+export SEATD_LOG_LEVEL=debug
+export LIBSEAT_BACKEND=builtin
+export WLR_LIBSEAT_BACKEND=builtin
 
 # 2. Configuration stricte pour libseat avec le démon dédié
 export LIBSEAT_BACKEND=seatd
