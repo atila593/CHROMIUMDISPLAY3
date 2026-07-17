@@ -30,9 +30,10 @@ bashio::log.info "Lancement du kiosque sur l'URL : $URL"
 
 exec cage -s -- chromium-browser \
     --ozone-platform-hint=auto \
-    --touch-events=enabled --touch-devices \
+    --touch-events=enabled \
     --kiosk \
     --no-sandbox \
     --autoplay-policy=no-user-gesture-required \
     --display=:0 \
+    --disable-features=WebRtcAllowInputVolumeAdjustment \
     "$URL"
