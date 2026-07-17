@@ -6,7 +6,7 @@ bashio::log.info "Préparation de l'environnement graphique Kiosk..."
 # 1. Configuration des chemins et variables d'environnement
 export XDG_RUNTIME_DIR=/run/user/0
 mkdir -p "$XDG_RUNTIME_DIR"
-chmod 0700 "$XDG_RUNTIME_DIR"
+chmod 0777 "$XDG_RUNTIME_DIR"  # On passe en 777 pour s'assurer que Chromium et Cage y écrivent sans blocage
 
 # 2. Attente active de la création du socket par le service seatd
 timeout=0
@@ -32,6 +32,7 @@ bashio::log.info "Lancement du kiosque sur l'URL : $URL"
 exec cage -s -- chromium-browser \
     --ozone-platform=wayland \
     --ozone-platform-hint=wayland \
+    --enable-features=UseOzonePlatform \
     --touch-events=enabled \
     --kiosk \
     --no-sandbox \
