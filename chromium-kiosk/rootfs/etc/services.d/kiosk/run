@@ -1,63 +1,31 @@
-#!/bin/bash
-exec 2>&1
+#!/usr/bin/with-contenv bashio
+set -e
 
-echo "🚀 Alignement des paramètres graphiques et de navigation..."
+bashio::log.info "Préparation de l'environnement graphique Kiosk..."
 
-# 1. Environnement de base requis pour Wayland / Cage + Force le mode direct (builtin)
+# 1. Variables d'environnement indispensables pour libseat et Chromium Ozone
+export SEATD_VTBOUND=0
+export LIBSEAT_BACKEND=builtin
 export XDG_RUNTIME_DIR=/run/user/0
-export CHROME_LOG_FILE=/dev/stdout
-export EGL_PLATFORM=wayland
-export SEATD_LOG_LEVEL=debug
-export LIBSEAT_BACKEND=seatd
-export WLR_LIBSEAT_BACKEND=seatd
+mkdir -p "$XDG_RUNTIME_DIR"
+chmod 0700 "$XDG_RUNTIME_DIR"
 
-echo "🔐 Mode libseat direct (builtin) activé pour libérer le tactile..."
-
-# 3. Application des permissions absolues sur les entrées tactiles et le GPU
-echo "🎮 Libération des accès matériels (GPU + Dalle Tactile)..."
-if [ -d /dev/input ]; then
-    chmod -R 777 /dev/input/ 2>/dev/null
-    echo "  -> [OK] Permissions appliquées sur /dev/input"
+# 2. Sécurité : On attend que le socket de seatd soit bien disponible (évite le crash au boot)
+# Cela règle la boucle infinie et les 30% de CPU
+if [ -f /run/seatd.sock ]; then
+    export LIBSEAT_CHOWN=1
 fi
 
-if [ -d /dev/dri ]; then
-    chmod -R 777 /dev/dri/ 2>/dev/null
-    echo "  -> [OK] Permissions appliquées sur /dev/dri"
-fi
+# 3. Récupération de l'URL depuis la configuration de l'add-on
+URL=$(bashio::config 'url')
+bashio::log.info "Lancement du kiosque sur l'URL : $URL"
 
-# 4. Configuration du profil persistant de Chromium (pour conserver la session)
-mkdir -p /data/chromium-profile
-chmod -R 777 /data/chromium-profile
-
-# 5. Récupération de l'URL cible
-if [ -f /data/options.json ]; then
-    URL=$(jq --raw-output '.url' /data/options.json 2>/dev/null)
-fi
-if [ -z "$URL" ] || [ "$URL" == "null" ]; then
-    URL="http://192.168.1.XX:8123/lovelace/0?auth_callback=1"
-fi
-
-echo "Lancement de CHROMIUMDISPLAY3 via Cage..."
-echo "Destination : $URL"
-
-socat TCP-LISTEN:9223,fork,reuseaddr TCP:127.0.0.1:9222 &
-
-# 6. Exécution de Cage + Chromium avec les bons flags de stabilité
-exec cage -d -- chromium-browser \
+# 4. Lancement de Cage + Chromium avec Ozone DRM
+# L'option -s de cage permet de contourner les restrictions d'exécution
+exec cage -s -- chromium-browser \
+    --ozone-platform=drm \
     --kiosk \
     --no-sandbox \
-    --no-first-run \
-    --enable-logging=stderr \
-    --log-level=0 \
-    --no-errdialogs \
-    --disable-infobars \
     --autoplay-policy=no-user-gesture-required \
-    --ozone-platform=wayland \
-    --enable-features=UseOzonePlatform \
-    --touch-events=enabled \
-    --vmodule=*ozone*=2,*touch*=2,*wayland*=2 \
-    --user-data-dir=/data/chromium-profile \
-    --remote-debugging-port=9222 \
-    --remote-allow-origins=* \
+    --display=:0 \
     "$URL"
-    
