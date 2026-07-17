@@ -8,8 +8,8 @@ export XDG_RUNTIME_DIR=/run/user/0
 export CHROME_LOG_FILE=/dev/stdout
 export EGL_PLATFORM=wayland
 export SEATD_LOG_LEVEL=debug
-export LIBSEAT_BACKEND=builtin
-export WLR_LIBSEAT_BACKEND=builtin
+export LIBSEAT_BACKEND=seatd
+export WLR_LIBSEAT_BACKEND=seatd
 
 echo "🔐 Mode libseat direct (builtin) activé pour libérer le tactile..."
 
