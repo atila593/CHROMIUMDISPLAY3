@@ -24,6 +24,8 @@ export LIBSEAT_BACKEND=seatd
 export SEATD_SOCK=/run/seatd.sock
 export WLR_LIBINPUT_NO_DEVICES=1
 export WLR_DRM_NO_ATOMIC=1
+export WLR_NO_HARDWARE_CURSORS=1
+export ALL_PROXY=
 
 # 4. Lancement de l'affichage
 URL=$(bashio::config 'url')
@@ -32,10 +34,11 @@ bashio::log.info "Lancement du kiosque sur l'URL : $URL"
 exec cage -s -- chromium-browser \
     --ozone-platform=wayland \
     --ozone-platform-hint=wayland \
-    --enable-features=UseOzonePlatform \
+    --enable-features=UseOzonePlatform,WaylandWindowDecorations \
     --touch-events=enabled \
     --kiosk \
     --no-sandbox \
+    --disable-gpu-sandbox \
     --autoplay-policy=no-user-gesture-required \
     --disable-features=WebRtcAllowInputVolumeAdjustment \
     "$URL"
