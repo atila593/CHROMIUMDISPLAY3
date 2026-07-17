@@ -29,7 +29,7 @@ URL=$(bashio::config 'url')
 bashio::log.info "Lancement du kiosque sur l'URL : $URL"
 
 exec cage -s -- chromium-browser \
-    --ozone-platform=drm \
+    --ozone-platform=wayland \
     --kiosk \
     --no-sandbox \
     --autoplay-policy=no-user-gesture-required \
