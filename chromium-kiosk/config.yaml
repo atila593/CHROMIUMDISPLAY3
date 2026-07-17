@@ -1,5 +1,5 @@
 name: "Chromium Display 3 Kiosk"
-version: "1.0.7"
+version: "1.0.8"
 slug: "chromium_display_3_kiosk"
 description: "Affichage Kiosque ultra-performant et léger basé sur Chromium Ozone DRM/KMS pour dalles tactiles et caméras."
 arch:
@@ -7,7 +7,7 @@ arch:
   - aarch64
 startup: application
 boot: auto
-init: true
+init: false
 full_access: true
 host_ipc: true
 udev: true
