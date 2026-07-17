@@ -1,4 +1,10 @@
-#!/bin/bash
-exec 2>&1
-echo "🪑 Démarrage du démon seatd..."
-exec seatd
+#!/usr/bin/with-contenv bashio
+set -e
+
+bashio::log.info "Démarrage de seatd..."
+
+# On force seatd à tourner en mode builtin si l'hôte bloque le VT
+export SEATD_VTBOUND=0
+
+# Lancement de seatd au premier plan pour S6-overlay
+exec seatd -g video
