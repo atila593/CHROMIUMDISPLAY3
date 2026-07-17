@@ -9,7 +9,6 @@ mkdir -p "$XDG_RUNTIME_DIR"
 chmod 0700 "$XDG_RUNTIME_DIR"
 
 # 2. Attente active de la création du socket par le service seatd
-# On laisse un délai maximal pour éviter que le kiosque ne se lance trop vite
 timeout=0
 while [ ! -S /run/seatd.sock ]; do
     if [ "$timeout" -ge 10 ]; then
@@ -20,10 +19,9 @@ while [ ! -S /run/seatd.sock ]; do
     timeout=$((timeout + 1))
 done
 
-# 3. Forcer la connexion vers le daemon seatd qui tourne en tâche de fond
+# 3. Forcer la connexion vers le daemon seatd
 export LIBSEAT_BACKEND=seatd
 export SEATD_SOCK=/run/seatd.sock
-export XDG_RUNTIME_DIR=/run/user/0
 export WLR_LIBINPUT_NO_DEVICES=0
 
 # 4. Lancement de l'affichage
@@ -32,7 +30,7 @@ bashio::log.info "Lancement du kiosque sur l'URL : $URL"
 
 exec cage -s -- chromium-browser \
     --ozone-platform-hint=auto \
-    --touch-events=enabled --touch-devices
+    --touch-events=enabled --touch-devices \
     --kiosk \
     --no-sandbox \
     --autoplay-policy=no-user-gesture-required \
