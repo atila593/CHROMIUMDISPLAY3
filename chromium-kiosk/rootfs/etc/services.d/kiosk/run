@@ -53,12 +53,11 @@ exec cage -d -- chromium-browser \
     --disable-infobars \
     --autoplay-policy=no-user-gesture-required \
     --ozone-platform=wayland \
-    --disable-gpu \
-    --disable-software-rasterizer \
-    --disable-features=Vulkan,UseOzonePlatform \
+    --enable-features=UseOzonePlatform \
     --touch-events=enabled \
+    --vmodule=*ozone*=2,*touch*=2,*wayland*=2 \
     --user-data-dir=/data/chromium-profile \
     --remote-debugging-port=9222 \
     --remote-allow-origins=* \
-    --vmodule \
     "$URL"
+    
