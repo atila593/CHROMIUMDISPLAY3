@@ -23,6 +23,7 @@ done
 export LIBSEAT_BACKEND=seatd
 export SEATD_SOCK=/run/seatd.sock
 export WLR_LIBINPUT_NO_DEVICES=1
+export WLR_DRM_NO_ATOMIC=1
 
 # 4. Lancement de l'affichage
 URL=$(bashio::config 'url')
