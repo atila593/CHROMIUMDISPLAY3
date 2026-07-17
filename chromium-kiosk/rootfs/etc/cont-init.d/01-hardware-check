@@ -1,42 +1,22 @@
-#!/bin/bash
-exec 2>&1
+#!/usr/bin/with-contenv bashio
+set -e
 
-echo "================================================================="
-echo "  [CHECK-LIST] INITIALISATION DES COMPOSANTS SYSTÈME (UDEV)      "
-echo "================================================================="
+bashio::log.info "Vérification de la compatibilité matérielle..."
 
-# 1. Amorce de la détection de la dalle tactile et des périphériques d'entrée
-echo -n "  [CHECK] Initialisation de UDEV pour le pavé tactile... "
-if udevadm trigger --action=add 2>/dev/null; then
-    echo -e "\e[32m[ OK ]\e[0m"
-    
-    # CRUCIAL POUR LE TACTILE : On donne les permissions d'accès aux périphériques de saisie
-    if [ -d /dev/input ]; then
-        chmod 666 /dev/input/* 2>/dev/null
-        echo "         -> Droits d'accès accordés aux dalles tactiles (/dev/input)"
-    else
-        echo "         -> ⚠️ Attention : Aucun dossier /dev/input trouvé"
-    fi
+# Vérification du GPU
+if [ ! -d /dev/dri ]; then
+    bashio::log.error "Aucune carte graphique détectée dans /dev/dri. Vérifiez les privilèges de l'add-on."
 else
-    echo -e "\e[33m[ ATTENTION ]\e[0m (Vérifier les privilèges)"
+    bashio::log.info "Carte graphique trouvée avec succès."
 fi
 
-# 2. Validation de l'accès direct aux nœuds graphiques du GPU
-echo -n "  [CHECK] Détection de l'accélérateur graphique (DRM)... "
-if [ -d /dev/dri ] && [ "$(ls -A /dev/dri 2>/dev/null)" ]; then
-    echo -e "\e[32m[ OK ]\e[0m"
-    chmod 666 /dev/dri/* 2>/dev/null
-    ls -l /dev/dri | sed 's/^/         -> /'
+# Vérification du Tactile
+if [ ! -d /dev/input ]; then
+    bashio::log.warning "Aucun périphérique d'entrée trouvé dans /dev/input. Le tactile pourrait ne pas fonctionner."
 else
-    echo -e "\e[31m[ ÉCHEC ]\e[0m (Accès direct GPU manquant)"
+    bashio::log.info "Périphériques d'entrée (tactile/souris) détectés."
 fi
 
-echo "================================================================="
-echo "  [CHECK-LIST TERMINÉE] PRÉPARATION DU MATÉRIEL RÉUSSIE          "
-echo "================================================================="
-
-# Création et droits pour les répertoires d'affichage Wayland
+# Initialisation propre des permissions pour seatd
 mkdir -p /run/user/0
-chmod 0700 /run/user/0
-
-exit 0
+chmod 700 /run/user/0
