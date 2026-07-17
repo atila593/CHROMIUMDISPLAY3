@@ -3,25 +3,31 @@ set -e
 
 bashio::log.info "Préparation de l'environnement graphique Kiosk..."
 
-# 1. Variables d'environnement indispensables pour libseat et Chromium Ozone
-export SEATD_VTBOUND=0
-export LIBSEAT_BACKEND=builtin
+# 1. Configuration des chemins et variables d'environnement
 export XDG_RUNTIME_DIR=/run/user/0
 mkdir -p "$XDG_RUNTIME_DIR"
 chmod 0700 "$XDG_RUNTIME_DIR"
 
-# 2. Sécurité : On attend que le socket de seatd soit bien disponible (évite le crash au boot)
-# Cela règle la boucle infinie et les 30% de CPU
-if [ -f /run/seatd.sock ]; then
-    export LIBSEAT_CHOWN=1
-fi
+# 2. Attente active de la création du socket par le service seatd
+# On laisse un délai maximal pour éviter que le kiosque ne se lance trop vite
+timeout=0
+while [ ! -S /run/seatd.sock ]; do
+    if [ "$timeout" -ge 10 ]; then
+        bashio::log.error "Le socket seatd n'a pas été trouvé après 10 secondes."
+        exit 1
+    fi
+    sleep 0.5
+    timeout=$((timeout + 1))
+done
 
-# 3. Récupération de l'URL depuis la configuration de l'add-on
+# 3. Forcer la connexion vers le daemon seatd qui tourne en tâche de fond
+export LIBSEAT_BACKEND=seatd
+export SEATD_SOCK=/run/seatd.sock
+
+# 4. Lancement de l'affichage
 URL=$(bashio::config 'url')
 bashio::log.info "Lancement du kiosque sur l'URL : $URL"
 
-# 4. Lancement de Cage + Chromium avec Ozone DRM
-# L'option -s de cage permet de contourner les restrictions d'exécution
 exec cage -s -- chromium-browser \
     --ozone-platform=drm \
     --kiosk \
