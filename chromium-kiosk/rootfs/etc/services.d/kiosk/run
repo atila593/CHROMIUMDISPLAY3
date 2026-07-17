@@ -22,7 +22,7 @@ done
 # 3. Forcer la connexion vers le daemon seatd
 export LIBSEAT_BACKEND=seatd
 export SEATD_SOCK=/run/seatd.sock
-export WLR_LIBINPUT_NO_DEVICES=0
+export WLR_LIBINPUT_NO_DEVICES=1
 
 # 4. Lancement de l'affichage
 URL=$(bashio::config 'url')
