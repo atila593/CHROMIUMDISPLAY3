@@ -30,9 +30,9 @@ export ALL_PROXY=
 URL=$(bashio::config 'url')
 bashio::log.info "Lancement du kiosque sur l'URL : $URL"
 
-export WLR_DEBUG=1
+export WLR_LOG_LEVEL=debug
 
-exec cage -s -- chromium-browser \
+exec cage -d -s -- chromium-browser \
     --ozone-platform=wayland \
     --ozone-platform-hint=wayland \
     --enable-features=UseOzonePlatform,WaylandWindowDecorations \
