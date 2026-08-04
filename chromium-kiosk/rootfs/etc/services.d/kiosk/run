@@ -22,7 +22,6 @@ done
 # 3. Forcer la connexion vers le daemon seatd
 export LIBSEAT_BACKEND=seatd
 export SEATD_SOCK=/run/seatd.sock
-export WLR_LIBINPUT_NO_DEVICES=1
 export WLR_DRM_NO_ATOMIC=1
 export WLR_NO_HARDWARE_CURSORS=1
 export ALL_PROXY=
