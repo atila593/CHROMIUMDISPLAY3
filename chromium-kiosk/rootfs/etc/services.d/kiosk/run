@@ -27,13 +27,11 @@ export WLR_NO_HARDWARE_CURSORS=1
 export ALL_PROXY=
 export XDG_SESSION_TYPE=wayland
 export WLR_LIBINPUT_NO_DEVICES=0
+export WLR_LOG_LEVEL=debug
 
 # 4. Lancement de l'affichage
 URL=$(bashio::config 'url')
 bashio::log.info "Lancement du kiosque sur l'URL : $URL"
-
-export WLR_LOG_LEVEL=debug
-export WLR_LIBINPUT_NO_DEVICES=0
 
 exec cage -d -s -- chromium-browser \
     --ozone-platform=wayland \
