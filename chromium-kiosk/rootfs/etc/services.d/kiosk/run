@@ -28,6 +28,7 @@ export ALL_PROXY=
 export XDG_SESSION_TYPE=wayland
 export WLR_LIBINPUT_NO_DEVICES=0
 export WLR_LOG_LEVEL=debug
+export LIBINPUT_MODEL_CLASSES=""
 
 # Vérification des événements input disponibles dans le conteneur
 bashio::log.info "Liste des périphériques input visibles :"
@@ -44,6 +45,7 @@ exec cage -d -s -- chromium-browser \
     --ozone-platform-hint=wayland \
     --enable-features=UseOzonePlatform,WaylandWindowDecorations \
     --touch-events=enabled \
+    --enable-pinch \
     --kiosk \
     --no-sandbox \
     --disable-gpu-sandbox \
