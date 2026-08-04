@@ -20,13 +20,12 @@ while [ ! -S /run/seatd.sock ]; do
 done
 
 # 3. Forcer la connexion vers le daemon seatd
-export LIBSEAT_BACKEND=seatd
-export SEATD_SOCK=/run/seatd.sock
+unset LIBSEAT_BACKEND
+unset SEATD_SOCK
+export WLR_BACKENDS=libinput,drm
+export WLR_LIBINPUT_NO_DEVICES=0
 export WLR_DRM_NO_ATOMIC=1
 export WLR_NO_HARDWARE_CURSORS=1
-export ALL_PROXY=
-export XDG_SESSION_TYPE=wayland
-export WLR_LIBINPUT_NO_DEVICES=0
 export WLR_LOG_LEVEL=debug
 export LIBINPUT_MODEL_CLASSES=""
 
