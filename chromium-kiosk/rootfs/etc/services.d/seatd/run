@@ -7,4 +7,4 @@ bashio::log.info "Démarrage de seatd..."
 export SEATD_VTBOUND=0
 
 # Lancement de seatd au premier plan pour S6-overlay
-exec seatd -g video
+exec seatd -g root
