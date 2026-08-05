@@ -1,28 +1,11 @@
 #!/usr/bin/with-contenv bashio
 set -e
 
-bashio::log.info "Préparation de l'environnement graphique Kiosk (Mode Direct)..."
+bashio::log.info "Démarrage du Kiosk en Mode Direct..."
 
-# 1. Variables d'environnement pour forcer l'accès direct aux inputs sans seatd
 export XDG_RUNTIME_DIR=/run/user/0
 mkdir -p "$XDG_RUNTIME_DIR"
 chmod 0777 "$XDG_RUNTIME_DIR"
-
-# 2. Attente active de la création du socket par le service seatd
-timeout=0
-while [ ! -S /run/seatd.sock ]; do
-    if [ "$timeout" -ge 15 ]; then
-        bashio::log.error "ERREUR : Le socket seatd (/run/seatd.sock) n'a pas été créé."
-        bashio::log.error "Vérifiez les logs du service seatd pour voir s'il a planté au lancement."
-        # Afficher les processus en cours pour voir si seatd tourne
-        ps aux || true
-        exit 1
-    fi
-    sleep 1
-    timeout=$((timeout + 1))
-done
-
-bashio::log.info "Socket seatd détecté avec succès !"
 
 unset LIBSEAT_BACKEND
 unset SEATD_SOCK
@@ -32,16 +15,15 @@ export WLR_DRM_NO_ATOMIC=1
 export WLR_NO_HARDWARE_CURSORS=1
 export WLR_LOG_LEVEL=debug
 
-# Vérification des événements input disponibles dans le conteneur
-bashio::log.info "Liste des périphériques input visibles :"
+bashio::log.info "Vérification des périphériques input :"
 ls -la /dev/input/ || true
 
-# 4. Lancement direct de Cage sans seatd
 URL=$(bashio::config 'url')
-bashio::log.info "Lancement du kiosque sur l'URL : $URL"
+bashio::log.info "Lancement de l'affichage sur l'URL : $URL"
 
 exec cage -d -s -- chromium-browser \
-    --ozone-platform=wayland \    --ozone-platform-hint=wayland \
+    --ozone-platform=wayland \
+    --ozone-platform-hint=wayland \
     --enable-features=UseOzonePlatform,WaylandWindowDecorations \
     --touch-events=enabled \
     --enable-pinch \
