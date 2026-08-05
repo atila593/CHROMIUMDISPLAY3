@@ -9,17 +9,17 @@ export XDG_RUNTIME_DIR=/run/user/0
 mkdir -p "$XDG_RUNTIME_DIR"
 chmod 0777 "$XDG_RUNTIME_DIR"
 
-mkdir -p /run/seatd
-export SEATD_SOCK=/run/seatd/seatd.sock
+# Chemin par défaut standard de seatd
+export SEATD_SOCK=/run/seatd.sock
 rm -f "$SEATD_SOCK"
 
 # 2. Nettoyage préventif
 pkill seatd || true
 sleep 1
 
-# 3. Démarrage de seatd en arrière-plan (le socket est lu depuis SEATD_SOCK)
+# 3. Démarrage de seatd en arrière-plan avec l'emplacement par défaut
 echo "$LOG_PREFIX Lancement du service seatd..."
-seatd -v debug &
+seatd &
 SEATD_PID=$!
 
 # Attente active que le socket seatd soit réellement créé (max 5 secondes)
