@@ -6,8 +6,6 @@ FROM ${BUILD_FROM}
 RUN apk add --no-cache \
     chromium \
     cage \
-    seatd \
-    seatd-openrc \
     mesa-dri-gallium \
     mesa-va-gallium \
     udev \
