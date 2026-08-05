@@ -1,9 +1,10 @@
-#!/bin/bash
+#!/usr/bin/with-contenv bashio
+set -e
 
 LOG_PREFIX="[KIOSK-INIT]"
 echo "$LOG_PREFIX Démarrage de la séquence d'initialisation du Kiosk..."
 
-# 1. Configuration des variables d'environnement pour l'affichage et les inputs
+# 1. Configuration des variables d'environnement
 export XDG_RUNTIME_DIR=/run/user/0
 mkdir -p "$XDG_RUNTIME_DIR"
 chmod 0777 "$XDG_RUNTIME_DIR"
@@ -11,9 +12,9 @@ chmod 0777 "$XDG_RUNTIME_DIR"
 export SEATD_SOCK=/run/seatd/seatd.sock
 rm -f "$SEATD_SOCK"
 
-# 2. Démarrage de seatd en arrière-plan avec des logs verbeux
+# 2. Démarrage de seatd en arrière-plan
 echo "$LOG_PREFIX Lancement du service seatd..."
-seatd -v -s "$SEATD_SOCK" &
+seatd -v debug -s "$SEATD_SOCK" -g root &
 SEATD_PID=$!
 
 # Attente active que le socket seatd soit prêt (max 5 secondes)
@@ -26,11 +27,11 @@ done
 if [ -S "$SEATD_SOCK" ]; then
     echo "$LOG_PREFIX [SUCCÈS] Service seatd opérationnel et en écoute sur $SEATD_SOCK (PID: $SEATD_PID)"
 else
-    echo "$LOG_PREFIX [ERREUR CRITIQUE] Échec du démarrage de seatd dans les délais impartis."
+    echo "$LOG_PREFIX [ERREUR CRITIQUE] Échec du démarrage de seatd."
     exit 1
-}
+fi
 
-# 3. Export de la variable libseat pour forcer l'utilisation de seatd
+# 3. Export de la variable libseat pour forcer seatd
 export LIBSEAT_BACKEND=seatd
 
 # 4. Listing complet et détaillé des périphériques d'entrée (Inputs)
@@ -40,16 +41,14 @@ echo "=================================================="
 ls -la /dev/input/
 echo "--------------------------------------------------"
 
-# Analyse détaillée de chaque event pour débusquer le tactile
+# Analyse détaillée de chaque event pour le tactile
 TOUCH_DETECTED=0
 for dev in /dev/input/event*; do
     if [ -e "$dev" ]; then
-        # Utilisation de evtest ou lecture des infos sysfs si disponible, sinon description basique
-        DEV_NAME=$(cat /sys/class/input/$(basename $dev)/device/name 2>/dev/null || echo "Inconnu")
+        DEV_NAME=$(cat /sys/class/input/$(basename "$dev")/device/name 2>/dev/null || echo "Inconnu")
         echo "$LOG_PREFIX Analyse de $dev -> Nom: $DEV_NAME"
         
-        # Vérification si le périphérique correspond à un écran tactile / multitouch
-        if echo "$DEV_NAME" | grep -Eiq "touch|pen|stylus|ft5x|goodix|egalax|atmel"; then
+        if echo "$DEV_NAME" | grep -Eiq "touch|pen|stylus|ft5x|goodix|egalax|atmel|hid-touch"; then
             echo "$LOG_PREFIX   >>> [TACTILE CONFIRMÉ] Périphérique tactile identifié sur $dev ($DEV_NAME)"
             TOUCH_DETECTED=1
         fi
@@ -59,7 +58,7 @@ done
 if [ $TOUCH_DETECTED -eq 1 ]; then
     echo "$LOG_PREFIX [BILAN TACTILE] Au moins un contrôleur tactile est fonctionnel et prêt."
 else
-    echo "$LOG_PREFIX [BILAN TACTILE] Aucun profil tactile explicite détecté par nom (fonctionnement standard/générique libinput actif)."
+    echo "$LOG_PREFIX [BILAN TACTILE] Aucun profil tactile explicite détecté par nom (libinput actif par défaut)."
 fi
 echo "=================================================="
 
@@ -70,15 +69,18 @@ export WLR_DRM_NO_ATOMIC=1
 export WLR_NO_HARDWARE_CURSORS=1
 export WLR_LOG_LEVEL=debug
 
-# 6. Lancement de l'URL cible (ajustez selon votre configuration Home Assistant)
-TARGET_URL="${HOMEASSISTANT_URL:-http://homeassistant:8123/lovelace/0}"
-echo "$LOG_PREFIX Lancement de l'affichage Kiosk sur l'URL : $TARGET_URL"
+# 6. Récupération de l'URL et lancement de Cage
+TARGET_URL=$(bashio::config 'url' || echo "http://homeassistant:8123/lovelace/0")
+echo "$LOG_PREFIX Lancement de l'affichage sur l'URL : $TARGET_URL"
 
-# 7. Exécution finale de Cage (compositeur Wayland) hébergeant Chromium
-exec cage -s -- chromium-browser \
-    --no-sandbox \
-    --disable-infobars \
-    --kiosk \
-    --enable-features=OverlayScrollbar \
+exec cage -d -s -- chromium-browser \
     --ozone-platform=wayland \
+    --ozone-platform-hint=wayland \
+    --enable-features=UseOzonePlatform,WaylandWindowDecorations \
+    --touch-events=enabled \
+    --enable-pinch \
+    --kiosk \
+    --no-sandbox \
+    --disable-gpu-sandbox \
+    --autoplay-policy=no-user-gesture-required \
     "$TARGET_URL"
