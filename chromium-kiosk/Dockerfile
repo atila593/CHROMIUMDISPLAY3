@@ -1,21 +1,24 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.20
 FROM ${BUILD_FROM}
 
-# Installation de Chromium, des pilotes graphiques, du compositeur kiosque léger Cage
-# et de seatd (gestionnaire de siège requis par libseat/wlroots en l'absence de logind/systemd)
+# Installation des paquets nécessaires (Wayland, Cage, Seatd, Navigateur, Outils de test)
 RUN apk add --no-cache \
-    chromium \
     cage \
-    mesa-dri-gallium \
-    mesa-va-gallium \
+    seatd \
+    chromium \
     udev \
+    eudev \
+    libinput \
+    evtest \
+    bash \
+    tzdata \
     jq \
-    socat \
     dos2unix
 
+# Copie des fichiers rootfs
 COPY rootfs /
 
-# Nettoyage automatique des scripts d'initialisation pour S6-Overlay
+# Normalisation des fins de ligne et permissions des scripts
 RUN if [ -d /etc/services.d ]; then \
         dos2unix /etc/services.d/*/run 2>/dev/null || true; \
         chmod -R 755 /etc/services.d/; \
