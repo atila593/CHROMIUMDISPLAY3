@@ -19,27 +19,23 @@ while [ ! -S /run/seatd.sock ]; do
     timeout=$((timeout + 1))
 done
 
-# 3. Forcer la connexion vers le daemon seatd
-unset LIBSEAT_BACKEND
-unset SEATD_SOCK
-export WLR_BACKENDS=libinput,drm
+# 3. Forcer la liaison explicite avec le socket de seatd pour les inputs
+export SEATD_SOCK=/run/seatd.sock
+export WLR_BACKENDS=drm,libinput
 export WLR_LIBINPUT_NO_DEVICES=0
 export WLR_DRM_NO_ATOMIC=1
 export WLR_NO_HARDWARE_CURSORS=1
 export WLR_LOG_LEVEL=debug
-export LIBINPUT_MODEL_CLASSES=""
 
 # Vérification des événements input disponibles dans le conteneur
 bashio::log.info "Liste des périphériques input visibles :"
 ls -la /dev/input/ || true
 
-# 4. Lancement de l'affichage (en s'assurant d'exécuter avec les droits du groupe input)
+# 4. Lancement de l'affichage via seatd (utilisation de seatd-launch pour enrober Cage)
 URL=$(bashio::config 'url')
 bashio::log.info "Lancement du kiosque sur l'URL : $URL"
 
-# On utilise sg ou s6-setuidgid si nécessaire pour s'assurer que Cage hérite du groupe input, 
-# ou on lance directement si le conteneur tourne déjà en root (le groupe root incluant input).
-exec cage -d -s -- chromium-browser \
+exec seatd-launch -- cage -d -s -- chromium-browser \
     --ozone-platform=wayland \
     --ozone-platform-hint=wayland \
     --enable-features=UseOzonePlatform,WaylandWindowDecorations \
