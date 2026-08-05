@@ -47,6 +47,8 @@ export WLR_LOG_LEVEL=debug
 TARGET_URL=$(bashio::config 'url' || echo "http://homeassistant:8123/lovelace/0")
 echo "$LOG_PREFIX Lancement de l'affichage sur l'URL : $TARGET_URL"
 
+ls -la /dev/dri/
+
 exec cage -d -s -- chromium-browser \
     --ozone-platform=wayland \
     --ozone-platform-hint=wayland \
