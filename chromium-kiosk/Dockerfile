@@ -6,6 +6,8 @@ RUN apk add --no-cache \
     cage \
     seatd \
     chromium \
+    mesa-dri-gallium \
+    mesa-gbm \
     udev \
     eudev \
     libinput \
