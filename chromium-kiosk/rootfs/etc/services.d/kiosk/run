@@ -1,27 +1,16 @@
 #!/usr/bin/with-contenv bashio
 set -e
 
-bashio::log.info "Préparation de l'environnement graphique Kiosk..."
+bashio::log.info "Préparation de l'environnement graphique Kiosk (Mode Direct)..."
 
-# 1. Configuration des chemins et variables d'environnement
+# 1. Variables d'environnement pour forcer l'accès direct aux inputs sans seatd
 export XDG_RUNTIME_DIR=/run/user/0
 mkdir -p "$XDG_RUNTIME_DIR"
-chmod 0777 "$XDG_RUNTIME_DIR"  # On passe en 777 pour s'assurer que Chromium et Cage y écrivent sans blocage
+chmod 0777 "$XDG_RUNTIME_DIR"
 
-# 2. Attente active de la création du socket par le service seatd
-timeout=0
-while [ ! -S /run/seatd.sock ]; do
-    if [ "$timeout" -ge 10 ]; then
-        bashio::log.error "Le socket seatd n'a pas été trouvé après 10 secondes."
-        exit 1
-    fi
-    sleep 0.5
-    timeout=$((timeout + 1))
-done
-
-# 3. Forcer la liaison explicite avec le socket de seatd pour les inputs
-export SEATD_SOCK=/run/seatd.sock
-export WLR_BACKENDS=drm,libinput
+unset LIBSEAT_BACKEND
+unset SEATD_SOCK
+export WLR_BACKENDS=libinput,drm
 export WLR_LIBINPUT_NO_DEVICES=0
 export WLR_DRM_NO_ATOMIC=1
 export WLR_NO_HARDWARE_CURSORS=1
@@ -31,11 +20,11 @@ export WLR_LOG_LEVEL=debug
 bashio::log.info "Liste des périphériques input visibles :"
 ls -la /dev/input/ || true
 
-# 4. Lancement de l'affichage via seatd (utilisation de seatd-launch pour enrober Cage)
+# 2. Lancement direct de Cage sans aucun gestionnaire de siège intermédiaire
 URL=$(bashio::config 'url')
-bashio::log.info "Lancement du kiosque sur l'URL : $URL"
+bashio::log.info "Lancement direct du kiosque sur l'URL : $URL"
 
-exec seatd-launch -- cage -d -s -- chromium-browser \
+exec cage -d -s -- chromium-browser \
     --ozone-platform=wayland \
     --ozone-platform-hint=wayland \
     --enable-features=UseOzonePlatform,WaylandWindowDecorations \
