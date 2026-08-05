@@ -20,13 +20,12 @@ export WLR_LOG_LEVEL=debug
 bashio::log.info "Liste des périphériques input visibles :"
 ls -la /dev/input/ || true
 
-# 2. Lancement direct de Cage sans aucun gestionnaire de siège intermédiaire
+# 4. Lancement direct de Cage sans seatd
 URL=$(bashio::config 'url')
-bashio::log.info "Lancement direct du kiosque sur l'URL : $URL"
+bashio::log.info "Lancement du kiosque sur l'URL : $URL"
 
 exec cage -d -s -- chromium-browser \
-    --ozone-platform=wayland \
-    --ozone-platform-hint=wayland \
+    --ozone-platform=wayland \    --ozone-platform-hint=wayland \
     --enable-features=UseOzonePlatform,WaylandWindowDecorations \
     --touch-events=enabled \
     --enable-pinch \
