@@ -9,7 +9,6 @@ export XDG_RUNTIME_DIR=/run/user/0
 mkdir -p "$XDG_RUNTIME_DIR"
 chmod 0777 "$XDG_RUNTIME_DIR"
 
-# Chemin par défaut standard de seatd
 export SEATD_SOCK=/run/seatd.sock
 rm -f "$SEATD_SOCK"
 
@@ -17,12 +16,11 @@ rm -f "$SEATD_SOCK"
 pkill seatd || true
 sleep 1
 
-# 3. Démarrage de seatd en arrière-plan avec l'emplacement par défaut
+# 3. Démarrage de seatd
 echo "$LOG_PREFIX Lancement du service seatd..."
 seatd &
 SEATD_PID=$!
 
-# Attente active que le socket seatd soit réellement créé (max 5 secondes)
 TIMEOUT=5
 while [ ! -S "$SEATD_SOCK" ] && [ $TIMEOUT -gt 0 ]; do
     sleep 1
@@ -30,62 +28,36 @@ while [ ! -S "$SEATD_SOCK" ] && [ $TIMEOUT -gt 0 ]; do
 done
 
 if [ -S "$SEATD_SOCK" ]; then
-    echo "$LOG_PREFIX [SUCCÈS] Service seatd opérationnel et en écoute sur $SEATD_SOCK (PID: $SEATD_PID)"
+    echo "$LOG_PREFIX [SUCCÈS] Service seatd opérationnel sur $SEATD_SOCK"
 else
-    echo "$LOG_PREFIX [ERREUR CRITIQUE] Échec du démarrage de seatd, socket introuvable."
+    echo "$LOG_PREFIX [ERREUR CRITIQUE] Échec seatd"
     exit 1
 fi
 
-# 4. Export de la variable libseat pour forcer seatd
 export LIBSEAT_BACKEND=seatd
 
-# 5. Listing complet et détaillé des périphériques d'entrée (Inputs)
-echo "=================================================="
-echo "$LOG_PREFIX LISTING DES PERIPHERIQUES D'ENTREE DETECTES :"
-echo "=================================================="
-ls -la /dev/input/
-echo "--------------------------------------------------"
-
-# Analyse détaillée de chaque event pour le tactile
-TOUCH_DETECTED=0
-for dev in /dev/input/event*; do
-    if [ -e "$dev" ]; then
-        DEV_NAME=$(cat /sys/class/input/$(basename "$dev")/device/name 2>/dev/null || echo "Inconnu")
-        echo "$LOG_PREFIX Analyse de $dev -> Nom: $DEV_NAME"
-        
-        if echo "$DEV_NAME" | grep -Eiq "touch|pen|stylus|ft5x|goodix|egalax|atmel|hid-touch"; then
-            echo "$LOG_PREFIX   >>> [TACTILE CONFIRMÉ] Périphérique tactile identifié sur $dev ($DEV_NAME)"
-            TOUCH_DETECTED=1
-        fi
-    fi
-done
-
-if [ $TOUCH_DETECTED -eq 1 ]; then
-    echo "$LOG_PREFIX [BILAN TACTILE] Au moins un contrôleur tactile est fonctionnel et prêt."
-else
-    echo "$LOG_PREFIX [BILAN TACTILE] Aucun profil tactile explicite détecté par nom (libinput actif par défaut)."
-fi
-echo "=================================================="
-
-# 6. Paramètres de configuration wlroots / libinput
+# 4. Paramètres de configuration wlroots / libinput pour forcer la prise en compte du tactile
 export WLR_BACKENDS=libinput,drm
 export WLR_LIBINPUT_NO_DEVICES=0
 export WLR_DRM_NO_ATOMIC=1
 export WLR_NO_HARDWARE_CURSORS=1
 export WLR_LOG_LEVEL=debug
 
-# 7. Récupération de l'URL et lancement de Cage
+# 5. Récupération de l'URL et lancement de Cage avec les flags tactiles stricts pour Chromium
 TARGET_URL=$(bashio::config 'url' || echo "http://homeassistant:8123/lovelace/0")
 echo "$LOG_PREFIX Lancement de l'affichage sur l'URL : $TARGET_URL"
 
 exec cage -d -s -- chromium-browser \
     --ozone-platform=wayland \
     --ozone-platform-hint=wayland \
-    --enable-features=UseOzonePlatform,WaylandWindowDecorations \
+    --enable-features=UseOzonePlatform,WaylandWindowDecorations,TouchpadOverscrollHistoryNavigation=0 \
     --touch-events=enabled \
     --enable-pinch \
     --kiosk \
     --no-sandbox \
     --disable-gpu-sandbox \
+    --disable-dev-shm-usage \
+    --use-gl=angle \
+    --use-angle=glesv2 \
     --autoplay-policy=no-user-gesture-required \
     "$TARGET_URL"
