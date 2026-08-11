@@ -61,6 +61,8 @@ echo "$LOG_PREFIX --- Test evtest (5s, touche l'écran maintenant) ---"
 timeout 5 evtest /dev/input/event7 2>&1 | tee -a /tmp/touchtest.log || true
 echo "$LOG_PREFIX --- Fin test evtest ---"
 
+echo "$LOG_PREFIX Lancement de Cage avec capture des logs libinput..."
+
 # Lancement de Cage et Chromium
 exec cage -s -- chromium-browser \
   --kiosk \
