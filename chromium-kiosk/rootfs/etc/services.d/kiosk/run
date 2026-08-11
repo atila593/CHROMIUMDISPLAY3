@@ -57,13 +57,15 @@ exec stdbuf -oL -eL cage -d -s -- chromium-browser \
     --ozone-platform=wayland \
     --ozone-platform-hint=wayland \
     --enable-features=UseOzonePlatform,WaylandWindowDecorations,TouchpadOverscrollHistoryNavigation=0 \
+    --disable-features=Vulkan \
     --touch-events=enabled \
     --enable-pinch \
     --kiosk \
     --no-sandbox \
     --disable-gpu-sandbox \
     --disable-dev-shm-usage \
-    --disable-gpu \
+    --use-gl=angle \
+    --use-angle=gles2 \
     --autoplay-policy=no-user-gesture-required \
     --enable-logging=stderr \
     --vmodule=*ozone*=2,*wayland*=2,*touch*=2 \
