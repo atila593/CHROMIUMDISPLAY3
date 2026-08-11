@@ -53,14 +53,15 @@ echo "$LOG_PREFIX --- Test evtest (5s, touche l'écran maintenant) ---"
 timeout 5 evtest /dev/input/event7 2>&1 | tee -a /tmp/touchtest.log || true
 echo "$LOG_PREFIX --- Fin test evtest ---"
 
-exec chromium-browser \
+# Lancement de Cage en arrière-plan ou en enveloppe directe avec la commande chromium
+exec cage -s -- chromium-browser \
   --kiosk \
   --no-first-run \
+  --no-sandbox \
   --ozone-platform=wayland \
   --enable-gpu \
-  --no-sandbox \
   --ignore-gpu-blocklist \
   --enable-features=VaapiVideoDecoder,CanvasOopRasterization \
   --disable-dev-shm-usage \
   --disable-extensions \
-  "http://homeassistant.local:8123/lovelace/0"
+  "http://homeassistant:8123/lovelace/0"
