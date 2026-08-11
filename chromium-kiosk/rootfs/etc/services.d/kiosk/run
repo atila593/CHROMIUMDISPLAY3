@@ -59,7 +59,6 @@ exec cage -d -s -- chromium-browser \
     --no-sandbox \
     --disable-gpu-sandbox \
     --disable-dev-shm-usage \
-    --use-gl=angle \
-    --use-angle=glesv2 \
+    --use-gl=egl \
     --autoplay-policy=no-user-gesture-required \
     "$TARGET_URL"
