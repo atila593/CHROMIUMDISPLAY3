@@ -15,7 +15,8 @@ RUN apk add --no-cache \
     bash \
     tzdata \
     jq \
-    dos2unix
+    dos2unix \
+    coreutils 
 
 # Copie des fichiers rootfs
 COPY rootfs /
