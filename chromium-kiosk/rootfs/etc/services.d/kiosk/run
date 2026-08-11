@@ -65,7 +65,7 @@ exec stdbuf -oL -eL cage -d -s -- chromium-browser \
     --disable-gpu-sandbox \
     --disable-dev-shm-usage \
     --use-gl=angle \
-    --use-angle=gles2 \
+    --use-angle=swiftshader \
     --autoplay-policy=no-user-gesture-required \
     --enable-logging=stderr \
     --vmodule=*ozone*=2,*wayland*=2,*touch*=2 \
