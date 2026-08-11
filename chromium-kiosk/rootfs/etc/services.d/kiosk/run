@@ -64,7 +64,7 @@ echo "$LOG_PREFIX --- Fin test evtest ---"
 echo "$LOG_PREFIX Lancement de Cage avec capture des logs libinput..."
 
 # Lancement de Cage et Chromium
-exec cage -s -- chromium-browser \
+cage -s -- chromium-browser \
   --kiosk \
   --no-first-run \
   --no-sandbox \
@@ -76,4 +76,8 @@ exec cage -s -- chromium-browser \
   --enable-features=VaapiVideoDecoder,CanvasOopRasterization \
   --disable-dev-shm-usage \
   --disable-extensions \
-  "http://homeassistant:8123/lovelace/0"
+  "http://homeassistant:8123/lovelace/0" > /tmp/cage_debug.log 2>&1 &
+
+# Conserver le script actif pour que le service s6 ne stoppe pas le conteneur
+CHILD_PID=$!
+wait "$CHILD_PID"
