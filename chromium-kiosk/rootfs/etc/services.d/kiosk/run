@@ -68,8 +68,9 @@ exec cage -s -- chromium-browser \
   --no-sandbox \
   --disable-dbus \
   --ozone-platform=wayland \
-  --enable-gpu \
-  --ignore-gpu-blocklist \
+  --touch-events=enabled \
+  --use-angle=gles \
+  --disable-features=Vulkan \
   --enable-features=VaapiVideoDecoder,CanvasOopRasterization \
   --disable-dev-shm-usage \
   --disable-extensions \
