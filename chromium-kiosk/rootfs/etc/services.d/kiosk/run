@@ -14,9 +14,17 @@ rm -f "$SEATD_SOCK"
 
 # 2. Nettoyage préventif
 pkill seatd || true
+pkill udevd || true
 sleep 1
 
-# 3. Démarrage de seatd
+# 3. Démarrage du démon Udev pour que libinput détecte les périphériques
+echo "$LOG_PREFIX Démarrage du service udev..."
+udevd --daemon || true
+udevadm trigger --type=subsystems --action=add || true
+udevadm trigger --type=devices --action=add || true
+udevadm settle --timeout=3 || true
+
+# 4. Démarrage de seatd
 echo "$LOG_PREFIX Lancement du service seatd..."
 seatd &
 SEATD_PID=$!
@@ -36,14 +44,14 @@ fi
 
 export LIBSEAT_BACKEND=seatd
 
-# 4. Paramètres de configuration wlroots / libinput pour forcer la prise en compte du tactile
+# 5. Paramètres de configuration wlroots / libinput
 export WLR_BACKENDS=libinput,drm
 export WLR_LIBINPUT_NO_DEVICES=0
 export WLR_DRM_NO_ATOMIC=1
 export WLR_NO_HARDWARE_CURSORS=1
 export WLR_LOG_LEVEL=debug
 
-# 5. Récupération de l'URL et lancement de Cage avec les flags tactiles stricts pour Chromium
+# 6. Récupération de l'URL et lancement de Cage avec Chromium
 TARGET_URL=$(bashio::config 'url' || echo "http://homeassistant:8123/lovelace/0")
 echo "$LOG_PREFIX Lancement de l'affichage sur l'URL : $TARGET_URL"
 
@@ -53,11 +61,12 @@ echo "$LOG_PREFIX --- Test evtest (5s, touche l'écran maintenant) ---"
 timeout 5 evtest /dev/input/event7 2>&1 | tee -a /tmp/touchtest.log || true
 echo "$LOG_PREFIX --- Fin test evtest ---"
 
-# Lancement de Cage en arrière-plan ou en enveloppe directe avec la commande chromium
+# Lancement de Cage et Chromium
 exec cage -s -- chromium-browser \
   --kiosk \
   --no-first-run \
   --no-sandbox \
+  --disable-dbus \
   --ozone-platform=wayland \
   --enable-gpu \
   --ignore-gpu-blocklist \
