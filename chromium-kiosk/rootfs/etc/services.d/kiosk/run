@@ -53,7 +53,7 @@ echo "$LOG_PREFIX --- Test evtest (5s, touche l'écran maintenant) ---"
 timeout 5 evtest /dev/input/event7 2>&1 | tee -a /tmp/touchtest.log || true
 echo "$LOG_PREFIX --- Fin test evtest ---"
 
-exec cage -d -s -- chromium-browser \
+exec stdbuf -oL -eL cage -d -s -- chromium-browser \
     --ozone-platform=wayland \
     --ozone-platform-hint=wayland \
     --enable-features=UseOzonePlatform,WaylandWindowDecorations,TouchpadOverscrollHistoryNavigation=0 \
@@ -64,6 +64,8 @@ exec cage -d -s -- chromium-browser \
     --disable-gpu-sandbox \
     --disable-dev-shm-usage \
     --use-gl=angle \
-    --use-angle=gles \
+    --use-angle=gl \
     --autoplay-policy=no-user-gesture-required \
+    --enable-logging=stderr \
+    --vmodule=*ozone*=2,*wayland*=2,*touch*=2 \
     "$TARGET_URL"
