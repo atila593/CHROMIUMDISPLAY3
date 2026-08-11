@@ -7,7 +7,7 @@ echo "$LOG_PREFIX Démarrage de la séquence d'initialisation du Kiosk..."
 # 1. Configuration des variables d'environnement
 export XDG_RUNTIME_DIR=/run/user/0
 mkdir -p "$XDG_RUNTIME_DIR"
-chmod 0777 "$XDG_RUNTIME_DIR"
+chmod 07e7 "$XDG_RUNTIME_DIR" 2>/dev/null || chmod 0777 "$XDG_RUNTIME_DIR"
 
 export SEATD_SOCK=/run/seatd.sock
 rm -f "$SEATD_SOCK"
@@ -24,9 +24,9 @@ udevadm trigger --type=subsystems --action=add || true
 udevadm trigger --type=devices --action=add || true
 udevadm settle --timeout=3 || true
 
-# 4. Démarrage de seatd
+# 4. Démarrage de seatd avec les droits appropriés si possible
 echo "$LOG_PREFIX Lancement du service seatd..."
-seatd &
+seatd -g root &
 SEATD_PID=$!
 
 TIMEOUT=5
@@ -55,15 +55,19 @@ export WLR_LOG_LEVEL=debug
 TARGET_URL=$(bashio::config 'url' || echo "http://homeassistant:8123/lovelace/0")
 echo "$LOG_PREFIX Lancement de l'affichage sur l'URL : $TARGET_URL"
 
-ls -la /dev/dri/
+if [ -d /dev/dri ]; then
+    ls -la /dev/dri/
+fi
 
-echo "$LOG_PREFIX --- Test evtest (5s, touche l'écran maintenant) ---"
-timeout 5 evtest /dev/input/event7 2>&1 | tee -a /tmp/touchtest.log || true
-echo "$LOG_PREFIX --- Fin test evtest ---"
+if [ -e /dev/input/event7 ]; then
+    echo "$LOG_PREFIX --- Test evtest (5s, touche l'écran maintenant) ---"
+    timeout 5 evtest /dev/input/event7 2>&1 | tee -a /tmp/touchtest.log || true
+    echo "$LOG_PREFIX --- Fin test evtest ---"
+fi
 
-echo "$LOG_PREFIX Lancement de Cage avec capture des logs libinput..."
+echo "$LOG_PREFIX Lancement de Cage..."
 
-# Lancement de Cage et Chromium
+# Lancement de Cage et Chromium en arrière-plan pour capturer la sortie
 cage -s -- chromium-browser \
   --kiosk \
   --no-first-run \
@@ -76,8 +80,12 @@ cage -s -- chromium-browser \
   --enable-features=VaapiVideoDecoder,CanvasOopRasterization \
   --disable-dev-shm-usage \
   --disable-extensions \
-  "http://homeassistant:8123/lovelace/0" > /tmp/cage_debug.log 2>&1 &
+  "$TARGET_URL" > /tmp/cage_debug.log 2>&1 &
 
-# Conserver le script actif pour que le service s6 ne stoppe pas le conteneur
 CHILD_PID=$!
+
+# Gestion propre de l'arrêt du conteneur (SIGTERM / SIGINT)
+trap "kill -TERM $CHILD_PID $SEATD_PID 2>/dev/null; exit 0" TERM INT
+
+# Attente de la fin du processus principal pour maintenir le service actif
 wait "$CHILD_PID"
