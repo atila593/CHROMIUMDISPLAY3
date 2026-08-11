@@ -58,6 +58,7 @@ exec chromium-browser \
   --no-first-run \
   --ozone-platform=wayland \
   --enable-gpu \
+  --no-sandbox \
   --ignore-gpu-blocklist \
   --enable-features=VaapiVideoDecoder,CanvasOopRasterization \
   --disable-dev-shm-usage \
