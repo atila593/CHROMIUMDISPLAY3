@@ -64,13 +64,12 @@ fi
 
 echo "$LOG_PREFIX Lancement de Cage..."
 
-# Chromium uses Cage's XWayland server to receive touch events.
 cage -- chromium-browser \
   --kiosk \
   --no-first-run \
   --no-sandbox \
   --disable-dbus \
-  --ozone-platform=x11 \
+  --ozone-platform=wayland \
   --touch-events=enabled \
   --use-angle=gles \
   --disable-features=Vulkan \
