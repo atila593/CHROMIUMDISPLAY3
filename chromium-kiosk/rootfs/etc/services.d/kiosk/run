@@ -63,7 +63,7 @@ fi
 echo "$LOG_PREFIX Lancement de Cage..."
 
 # Afficher les diagnostics dans les logs de l'add-on et les conserver dans un fichier
-cage -D -- chromium-browser \
+cage -- chromium-browser \
   --kiosk \
   --no-first-run \
   --no-sandbox \
