@@ -41,7 +41,6 @@ export WLR_BACKENDS=libinput,drm
 export WLR_LIBINPUT_NO_DEVICES=0
 export WLR_DRM_NO_ATOMIC=1
 export WLR_NO_HARDWARE_CURSORS=1
-export WLR_LOG_LEVEL=debug
 
 # 5. Récupération de l'URL et lancement de Cage avec Chromium
 TARGET_URL=$(bashio::config 'url' || echo "http://homeassistant:8123/lovelace/0")
@@ -56,10 +55,15 @@ if [ -d /dev/input ]; then
     ls -la /dev/input/
 fi
 
+if [ -r /proc/bus/input/devices ]; then
+    echo "$LOG_PREFIX Inventaire des périphériques d'entrée du noyau :"
+    cat /proc/bus/input/devices
+fi
+
 echo "$LOG_PREFIX Lancement de Cage..."
 
 # Afficher les diagnostics dans les logs de l'add-on et les conserver dans un fichier
-cage -s -- chromium-browser \
+cage -D -- chromium-browser \
   --kiosk \
   --no-first-run \
   --no-sandbox \
