@@ -90,7 +90,7 @@ fi
 echo "$LOG_PREFIX Lancement de Cage..."
 
 # Afficher les diagnostics dans les logs de l'add-on et les conserver dans un fichier
-cage -- chromium-browser \
+cage -- env WAYLAND_DEBUG=1 chromium-browser \
   --kiosk \
   --no-first-run \
   --no-sandbox \
@@ -102,7 +102,17 @@ cage -- chromium-browser \
   --enable-features=VaapiVideoDecoder,CanvasOopRasterization \
   --disable-dev-shm-usage \
   --disable-extensions \
-  "$TARGET_URL" > >(tee /tmp/cage_debug.log) 2>&1 &
+  "$TARGET_URL" > >(awk '
+      /wl_seat@.*capabilities/ || /wl_touch@/ {
+          print
+          fflush()
+          next
+      }
+      !/ wl_[[:alnum:]_]+@[0-9]+/ {
+          print
+          fflush()
+      }
+  ' | tee /tmp/cage_debug.log) 2>&1 &
 
 CHILD_PID=$!
 TOUCH_TEST_PID=
