@@ -58,7 +58,7 @@ fi
 
 echo "$LOG_PREFIX Lancement de Cage..."
 
-# Lancement de Cage et Chromium en arrière-plan pour capturer la sortie
+# Afficher les diagnostics dans les logs de l'add-on et les conserver dans un fichier
 cage -s -- chromium-browser \
   --kiosk \
   --no-first-run \
@@ -71,7 +71,7 @@ cage -s -- chromium-browser \
   --enable-features=VaapiVideoDecoder,CanvasOopRasterization \
   --disable-dev-shm-usage \
   --disable-extensions \
-  "$TARGET_URL" > /tmp/cage_debug.log 2>&1 &
+  "$TARGET_URL" > >(tee /tmp/cage_debug.log) 2>&1 &
 
 CHILD_PID=$!
 
