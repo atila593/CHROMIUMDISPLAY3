@@ -10,11 +10,21 @@ else
     bashio::log.info "Carte graphique trouvée avec succès."
 fi
 
-# Vérification du Tactile
+# Vérification des périphériques d'entrée
 if [ ! -d /dev/input ]; then
     bashio::log.warning "Aucun périphérique d'entrée trouvé dans /dev/input. Le tactile pourrait ne pas fonctionner."
 else
-    bashio::log.info "Périphériques d'entrée (tactile/souris) détectés."
+    INPUT_DEVICE_FOUND=false
+    for input_device in /dev/input/event*; do
+        if [ -e "$input_device" ]; then
+            bashio::log.info "Périphérique d'entrée disponible : $input_device"
+            INPUT_DEVICE_FOUND=true
+        fi
+    done
+
+    if [ "$INPUT_DEVICE_FOUND" = false ]; then
+        bashio::log.warning "Aucun périphérique event* trouvé dans /dev/input. Le tactile pourrait ne pas fonctionner."
+    fi
 fi
 
 # Initialisation propre des permissions pour seatd
