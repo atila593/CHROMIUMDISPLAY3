@@ -55,81 +55,34 @@ if [ -d /dev/input ]; then
     ls -la /dev/input/
 fi
 
-TOUCH_EVENT=
 if [ -r /proc/bus/input/devices ]; then
     echo "$LOG_PREFIX Inventaire des périphériques d'entrée du noyau :"
     cat /proc/bus/input/devices
-    TOUCH_EVENT=$(awk '
-        BEGIN { RS = "" }
-        {
-            direct = 0
-            handlers = ""
-            count = split($0, lines, "\n")
-            for (i = 1; i <= count; i++) {
-                if (lines[i] == "B: PROP=2") {
-                    direct = 1
-                } else if (index(lines[i], "H: Handlers=") == 1) {
-                    handlers = substr(lines[i], 13)
-                }
-            }
-            if (direct) {
-                count = split(handlers, names, " ")
-                for (i = 1; i <= count; i++) {
-                    if (names[i] ~ /^event[0-9]+$/) {
-                        print "/dev/input/" names[i]
-                        exit
-                    }
-                }
-            }
-        }
-    ' /proc/bus/input/devices)
 else
     echo "$LOG_PREFIX Inventaire des périphériques d'entrée du noyau indisponible."
 fi
 
 echo "$LOG_PREFIX Lancement de Cage..."
 
-# Afficher les diagnostics dans les logs de l'add-on et les conserver dans un fichier
-cage -- env WAYLAND_DEBUG=1 chromium-browser \
+# Chromium uses Cage's XWayland server to receive touch events.
+cage -- chromium-browser \
   --kiosk \
   --no-first-run \
   --no-sandbox \
   --disable-dbus \
-  --ozone-platform=wayland \
+  --ozone-platform=x11 \
   --touch-events=enabled \
   --use-angle=gles \
   --disable-features=Vulkan \
   --enable-features=VaapiVideoDecoder,CanvasOopRasterization \
   --disable-dev-shm-usage \
   --disable-extensions \
-  "$TARGET_URL" > >(awk '
-      /wl_seat@.*capabilities/ || /wl_touch@/ {
-          print
-          fflush()
-          next
-      }
-      !/ wl_[[:alnum:]_]+@[0-9]+/ {
-          print
-          fflush()
-      }
-  ' | tee /tmp/cage_debug.log) 2>&1 &
+  "$TARGET_URL" > >(tee /tmp/cage_debug.log) 2>&1 &
 
 CHILD_PID=$!
-TOUCH_TEST_PID=
 
 trap 'kill -TERM "$CHILD_PID" "$SEATD_PID" 2>/dev/null || true
-    if [ -n "$TOUCH_TEST_PID" ]; then
-        kill -TERM "$TOUCH_TEST_PID" 2>/dev/null || true
-    fi
     exit 0' TERM INT
-
-if [ -n "$TOUCH_EVENT" ]; then
-    echo "$LOG_PREFIX Test des événements tactiles sur $TOUCH_EVENT pendant 30 secondes. Touchez l'écran maintenant."
-    timeout 30 evtest "$TOUCH_EVENT" > >(tee -a /tmp/cage_debug.log) 2>&1 &
-    TOUCH_TEST_PID=$!
-else
-    echo "$LOG_PREFIX Aucun périphérique tactile direct détecté dans /proc/bus/input/devices."
-fi
 
 # Attente de la fin du processus principal pour maintenir le service actif
 wait "$CHILD_PID"
